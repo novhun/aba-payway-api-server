@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  payway-api:
+    build: .
+    container_name: aba-payway-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./aba_automation.db:/app/aba_automation.db
+    env_file:
+      - .env
+    restart: unless-stopped

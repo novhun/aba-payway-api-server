@@ -1,0 +1,9 @@
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String
+from model.database import Base
+
+class Setting(Base):
+    __tablename__ = "setting"
+    
+    key: Mapped[str] = mapped_column(String, primary_key=True)
+    value: Mapped[str] = mapped_column(String, nullable=False)
