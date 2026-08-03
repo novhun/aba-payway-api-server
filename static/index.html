@@ -6,14 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PayWay Admin Dashboard</title>
 
-  <style>
-    @font-face {
-      font-family: 'Kantumruy Pro';
-      src: url('/assets/fonts/KantumruyPro-Regular.ttf') format('ttf');
-      font-weight: 100 900;
-      font-style: normal;
-    }
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@100..900&display=swap" rel="stylesheet">
 
+  <style>
     body {
       font-family: 'Kantumruy Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       margin: 0;
@@ -77,9 +74,26 @@
     .mobile-nav-item.active {
       color: #1677ff;
     }
+    .mobile-nav-item span:not(.anticon) {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      font-size: 11px;
+      transition: all 0.3s ease;
+    }
+    .mobile-nav-item.active span:not(.anticon) {
+      max-height: 20px;
+      opacity: 1;
+      margin-top: 2px;
+    }
     .mobile-nav-item .anticon {
+      font-size: 22px;
+      margin-bottom: 0px;
+      transition: all 0.3s ease;
+    }
+    .mobile-nav-item.active .anticon {
       font-size: 20px;
-      margin-bottom: 4px;
+      transform: translateY(-2px);
     }
 
     @media (max-width: 768px) {
@@ -119,6 +133,10 @@
     }
     body.theme-dark {
       background: #141414;
+    }
+    body.theme-dark .mobile-bottom-nav {
+      background: #1f1f1f !important;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.4) !important;
     }
   </style>
 
@@ -826,7 +844,7 @@
             )},
             { key: '2', label: 'Python', children: (
               <Typography.Paragraph copyable={{ text: `import requests\n\nurl = "${window.location.origin}/api/v1/payment/verify/12345"\nheaders = {\n    "X-API-Key": "${selectedApiToken}"\n}\n\nresponse = requests.get(url, headers=headers)\nprint(response.json())` }}>
-                <pre style={{ background: '#f5f5f5', padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`import requests
+                <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`import requests
 
 url = "${window.location.origin}/api/v1/payment/verify/12345"
 headers = {
@@ -839,7 +857,7 @@ print(response.json())`}</code></pre>
             )},
             { key: '3', label: 'Node.js', children: (
               <Typography.Paragraph copyable={{ text: `const axios = require('axios');\n\nconst url = '${window.location.origin}/api/v1/payment/verify/12345';\nconst headers = {\n  'X-API-Key': '${selectedApiToken}'\n};\n\naxios.get(url, { headers })\n  .then(response => console.log(response.data))\n  .catch(error => console.error(error));` }}>
-                <pre style={{ background: '#f5f5f5', padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`const axios = require('axios');
+                <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`const axios = require('axios');
 
 const url = '${window.location.origin}/api/v1/payment/verify/12345';
 const headers = {
@@ -853,7 +871,7 @@ axios.get(url, { headers })
             )},
             { key: '4', label: 'React.js', children: (
               <Typography.Paragraph copyable={{ text: `import React, { useState, useEffect } from 'react';\nimport axios from 'axios';\n\nfunction VerifyPaymentComponent({ invoiceId }) {\n  const [status, setStatus] = useState(null);\n\n  useEffect(() => {\n    const verifyPayment = async () => {\n      try {\n        const response = await axios.get(\`${window.location.origin}/api/v1/payment/verify/\${invoiceId}\`, {\n          headers: { 'X-API-Key': '${selectedApiToken}' }\n        });\n        setStatus(response.data.status);\n      } catch (error) {\n        console.error(error);\n      }\n    };\n    if (invoiceId) verifyPayment();\n  }, [invoiceId]);\n\n  return <div>Payment Status: {status}</div>;\n}` }}>
-                <pre style={{ background: '#f5f5f5', padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`import React, { useState, useEffect } from 'react';
+                <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 function VerifyPaymentComponent({ invoiceId }) {
@@ -879,7 +897,7 @@ function VerifyPaymentComponent({ invoiceId }) {
             )},
             { key: '5', label: 'Vue.js', children: (
               <Typography.Paragraph copyable={{ text: `<template>\n  <div>Payment Status: {{ status }}</div>\n</template>\n\n<script>\nimport axios from 'axios';\n\nexport default {\n  data() {\n    return { status: null };\n  },\n  async mounted() {\n    try {\n      const response = await axios.get('${window.location.origin}/api/v1/payment/verify/12345', {\n        headers: { 'X-API-Key': '${selectedApiToken}' }\n      });\n      this.status = response.data.status;\n    } catch (error) {\n      console.error(error);\n    }\n  }\n}\n<\\/script>` }}>
-                <pre style={{ background: '#f5f5f5', padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`<template>
+                <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`<template>
   <div>Payment Status: {{ status }}</div>
 </template>
 
@@ -906,7 +924,7 @@ export default {
             )},
             { key: '6', label: 'PHP', children: (
               <Typography.Paragraph copyable={{ text: `<?php\n$url = "${window.location.origin}/api/v1/payment/verify/12345";\n\n$options = array(\n    'http' => array(\n        'header'  => "X-API-Key: ${selectedApiToken}\\r\\n",\n        'method'  => 'GET'\n    )\n);\n\n$context  = stream_context_create($options);\n$result = file_get_contents($url, false, $context);\n\necho $result;\n?>` }}>
-                <pre style={{ background: '#f5f5f5', padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`<?php
+                <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`<?php
 $url = "${window.location.origin}/api/v1/payment/verify/12345";
 
 $options = array(
@@ -940,7 +958,7 @@ echo $result;
             )},
             { key: '2', label: 'React.js', children: (
               <Typography.Paragraph copyable={{ text: `import React from 'react';\n\nfunction PaymentFrame({ invoiceId }) {\n  return (\n    <iframe \n      src={\`${window.location.origin}/api/v1/payment/qr-code/verify/\${invoiceId}\`} \n      width="400" \n      height="600" \n      style={{ border: 'none' }}\n      title="Payment QR Code"\n    />\n  );\n}` }}>
-                <pre style={{ background: '#f5f5f5', padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`import React from 'react';
+                <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`import React from 'react';
 
 function PaymentFrame({ invoiceId }) {
   return (
@@ -980,7 +998,7 @@ function PaymentFrame({ invoiceId }) {
           )},
           { key: '2', label: 'Python', children: (
             <Typography.Paragraph copyable={{ text: `import requests\n\nurl = "${window.location.origin}/api/v1/payment/create"\nheaders = {\n    "X-API-Key": "${selectedApiToken}",\n    "Content-Type": "application/json"\n}\ndata = {\n    "code_merchant": "aba_merchant_1",\n    "amount": "1.50",\n    "currency": "USD"\n}\n\nresponse = requests.post(url, headers=headers, json=data)\nprint(response.json())` }}>
-              <pre style={{ background: '#f5f5f5', padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`import requests
+              <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`import requests
 
 url = "${window.location.origin}/api/v1/payment/create"
 headers = {
@@ -999,7 +1017,7 @@ print(response.json())`}</code></pre>
           )},
           { key: '3', label: 'Node.js', children: (
             <Typography.Paragraph copyable={{ text: `const axios = require('axios');\n\nconst url = '${window.location.origin}/api/v1/payment/create';\nconst headers = {\n  'X-API-Key': '${selectedApiToken}',\n  'Content-Type': 'application/json'\n};\nconst data = {\n  code_merchant: 'aba_merchant_1',\n  amount: '1.50',\n  currency: 'USD'\n};\n\naxios.post(url, data, { headers })\n  .then(response => console.log(response.data))\n  .catch(error => console.error(error));` }}>
-              <pre style={{ background: '#f5f5f5', padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`const axios = require('axios');
+              <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`const axios = require('axios');
 
 const url = '${window.location.origin}/api/v1/payment/create';
 const headers = {
@@ -1019,7 +1037,7 @@ axios.post(url, data, { headers })
           )},
           { key: '4', label: 'React.js', children: (
             <Typography.Paragraph copyable={{ text: `import React, { useState } from 'react';\nimport axios from 'axios';\n\nfunction PaymentComponent() {\n  const [result, setResult] = useState(null);\n\n  const createPayment = async () => {\n    try {\n      const response = await axios.post('${window.location.origin}/api/v1/payment/create', {\n        code_merchant: 'aba_merchant_1',\n        amount: '1.50',\n        currency: 'USD'\n      }, {\n        headers: { 'X-API-Key': '${selectedApiToken}' }\n      });\n      setResult(response.data);\n    } catch (error) {\n      console.error(error);\n    }\n  };\n\n  return <button onClick={createPayment}>Pay $1.50</button>;\n}` }}>
-              <pre style={{ background: '#f5f5f5', padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`import React, { useState } from 'react';
+              <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`import React, { useState } from 'react';
 import axios from 'axios';
 
 function PaymentComponent() {
@@ -1046,7 +1064,7 @@ function PaymentComponent() {
           )},
           { key: '5', label: 'Vue.js', children: (
             <Typography.Paragraph copyable={{ text: `<template>\n  <button @click="createPayment">Pay $1.50</button>\n</template>\n\n<script>\nimport axios from 'axios';\n\nexport default {\n  methods: {\n    async createPayment() {\n      try {\n        const response = await axios.post('${window.location.origin}/api/v1/payment/create', {\n          code_merchant: 'aba_merchant_1',\n          amount: '1.50',\n          currency: 'USD'\n        }, {\n          headers: { 'X-API-Key': '${selectedApiToken}' }\n        });\n        console.log(response.data);\n      } catch (error) {\n        console.error(error);\n      }\n    }\n  }\n}\n<\\/script>` }}>
-              <pre style={{ background: '#f5f5f5', padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`<template>
+              <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`<template>
   <button @click="createPayment">Pay $1.50</button>
 </template>
 
@@ -1076,7 +1094,7 @@ export default {
           )},
           { key: '6', label: 'PHP', children: (
             <Typography.Paragraph copyable={{ text: `<?php\n$url = "${window.location.origin}/api/v1/payment/create";\n$data = array(\n    "code_merchant" => "aba_merchant_1",\n    "amount" => "1.50",\n    "currency" => "USD"\n);\n\n$options = array(\n    'http' => array(\n        'header'  => "Content-Type: application/json\\r\\nX-API-Key: ${selectedApiToken}\\r\\n",\n        'method'  => 'POST',\n        'content' => json_encode($data)\n    )\n);\n\n$context  = stream_context_create($options);\n$result = file_get_contents($url, false, $context);\n\necho $result;\n?>` }}>
-              <pre style={{ background: '#f5f5f5', padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`<?php
+              <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`<?php
 $url = "${window.location.origin}/api/v1/payment/create";
 $data = array(
     "code_merchant" => "aba_merchant_1",
@@ -1117,7 +1135,7 @@ echo $result;
         }}>
           <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
 
-            <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', padding: '0 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', zIndex: 2 }}>
+            <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: themeMode === 'dark' ? '#141414' : (themeMode === 'glass' ? 'rgba(255,255,255,0.1)' : '#ffffff'), padding: '0 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', zIndex: 2 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{ minWidth: 32, width: 32, height: 32, background: `linear-gradient(45deg, ${primaryColor}, #52c41a)`, borderRadius: 8, display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#fff', fontWeight: 'bold' }}>P</div>
                 <Title level={4} style={{ margin: 0, fontSize: 'clamp(16px, 4vw, 20px)' }}>{t.title || 'PayWay Admin'}</Title>
@@ -1158,7 +1176,7 @@ echo $result;
             <Layout>
               <Sider 
                 width={200} 
-                style={{ background: '#fff' }}
+                style={{ background: themeMode === 'dark' ? '#141414' : (themeMode === 'glass' ? 'rgba(255,255,255,0.1)' : '#ffffff') }}
                 className="desktop-only"
               >
                 <Menu
@@ -1216,7 +1234,7 @@ echo $result;
                               
                               return (
                                 <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '12%' }}>
-                                  <div style={{ position: 'relative', height: 250, width: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: '#f5f5f5', borderRadius: 4 }}>
+                                  <div style={{ position: 'relative', height: 250, width: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), borderRadius: 4 }}>
                                     <div style={{ position: 'absolute', bottom: 0, width: '100%', height: `${heightTotal}%`, backgroundColor: '#1677ff', borderRadius: '4px 4px 0 0', opacity: 0.3, transition: 'height 0.3s' }} title={`Total: ${day.total}`} />
                                     <div style={{ position: 'absolute', bottom: 0, width: '100%', height: `${heightSuccess}%`, backgroundColor: '#52c41a', borderRadius: '4px 4px 0 0', transition: 'height 0.3s' }} title={`Success: ${day.success}`} />
                                   </div>
@@ -1594,7 +1612,7 @@ echo $result;
                     <Typography.Title level={4}>Authentication</Typography.Title>
                     <Typography.Paragraph>
                       All API requests require an API key to be sent in the header:
-                      <pre style={{ background: '#f5f5f5', padding: '12px', borderRadius: '4px', marginTop: '8px' }}><code>X-API-Key: YOUR_API_KEY</code></pre>
+                      <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', marginTop: '8px' }}><code>X-API-Key: YOUR_API_KEY</code></pre>
                     </Typography.Paragraph>
 
                     <Typography.Title level={4} style={{ marginTop: '24px' }}>Endpoints</Typography.Title>
@@ -1602,13 +1620,13 @@ echo $result;
                     <Card size="small" title={<Tag color="blue">POST</Tag>} extra={<Text strong>/api/v1/payment/create</Text>} style={{marginBottom: 16}}>
                       <Typography.Paragraph>Creates a new payment QR code invoice.</Typography.Paragraph>
                       <Typography.Text strong>Request Body (JSON):</Typography.Text>
-                      <pre style={{ background: '#f5f5f5', padding: '12px', borderRadius: '4px', marginTop: '8px' }}><code>{`{
+                      <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', marginTop: '8px' }}><code>{`{
   "code_merchant": "aba_merchant_1",
   "amount": "1.50",
   "currency": "USD"
 }`}</code></pre>
                       <Typography.Text strong>Response:</Typography.Text>
-                      <pre style={{ background: '#f5f5f5', padding: '12px', borderRadius: '4px', marginTop: '8px' }}><code>{`{
+                      <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', marginTop: '8px' }}><code>{`{
   "invoice_id": 12345,
   "payment_status": "PROCESSING"
 }`}</code></pre>
@@ -1617,7 +1635,7 @@ echo $result;
                     <Card size="small" title={<Tag color="green">GET</Tag>} extra={<Text strong>/api/v1/payment/verify/{'{invoice_id}'}</Text>} style={{marginBottom: 16}}>
                       <Typography.Paragraph>Verifies the status of a payment by its invoice ID via JSON API.</Typography.Paragraph>
                       <Typography.Text strong>Response:</Typography.Text>
-                      <pre style={{ background: '#f5f5f5', padding: '12px', borderRadius: '4px', marginTop: '8px' }}><code>{`{
+                      <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', marginTop: '8px' }}><code>{`{
   "invoice_id": 12345,
   "amount": "1.50",
   "currency": "USD",
@@ -1630,7 +1648,7 @@ echo $result;
                     <Card size="small" title={<Tag color="green">GET</Tag>} extra={<Text strong>/api/v1/payment/qr-code/verify/{'{invoice_id}'}</Text>}>
                       <Typography.Paragraph>Renders an HTML payment card interface for the QR code, which automatically updates upon payment status change.</Typography.Paragraph>
                       <Typography.Text strong>Response:</Typography.Text>
-                      <pre style={{ background: '#f5f5f5', padding: '12px', borderRadius: '4px', marginTop: '8px' }}><code>Content-Type: text/html</code></pre>
+                      <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', marginTop: '8px' }}><code>Content-Type: text/html</code></pre>
                     </Card>
 
                     <Typography.Title level={4} style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
