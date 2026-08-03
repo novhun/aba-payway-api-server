@@ -211,6 +211,11 @@
           setIsTesting(false);
         }
       };
+
+      const formatUTC = (dateStr) => {
+        if (!dateStr) return '-';
+        return new Date(dateStr.endsWith('Z') ? dateStr : dateStr + 'Z').toLocaleString();
+      };
       
       const [themeMode, setThemeMode] = useState(localStorage.getItem('ui_theme') || 'light');
       const [primaryColor, setPrimaryColor] = useState(localStorage.getItem('ui_color') || '#1677ff');
@@ -352,7 +357,7 @@
           'Amount': o.amount,
           'Currency': o.currency,
           'Status': o.status,
-          'Date': o.updated_at ? new Date(o.updated_at).toLocaleString() : (o.created_at ? new Date(o.created_at).toLocaleString() : '-')
+          'Date': o.updated_at ? formatUTC(o.updated_at) : (o.created_at ? formatUTC(o.created_at) : '-')
         }));
         const ws = XLSX.utils.json_to_sheet(exportData);
         const wb = XLSX.utils.book_new();
@@ -377,7 +382,7 @@
             o.amount,
             o.currency,
             o.status,
-            o.updated_at ? new Date(o.updated_at).toLocaleString() : (o.created_at ? new Date(o.created_at).toLocaleString() : '-')
+            o.updated_at ? formatUTC(o.updated_at) : (o.created_at ? formatUTC(o.created_at) : '-')
           ]);
         });
         
@@ -725,7 +730,7 @@
             return <Tag color={color} icon={icon} style={{ minWidth: 90, textAlign: 'center' }}>{status}</Tag>;
           }
         },
-        { title: t.updated || 'Updated At', dataIndex: 'updated_at', key: 'updated_at', render: (text) => text ? new Date(text).toLocaleString() : '-' }
+        { title: t.updated || 'Updated At', dataIndex: 'updated_at', key: 'updated_at', render: (text) => formatUTC(text) }
       ];
 
       const merchantColumns = [
@@ -779,7 +784,7 @@
       ];
 
       const apiLogColumns = [
-        { title: t.updated || 'Timestamp', dataIndex: 'created_at', key: 'created_at', render: (text) => text ? new Date(text).toLocaleString() : '-' },
+        { title: t.updated || 'Timestamp', dataIndex: 'created_at', key: 'created_at', render: (text) => formatUTC(text) },
         { title: t.method || 'Method', dataIndex: 'method', key: 'method', render: method => {
             let color = method === 'GET' ? 'blue' : method === 'POST' ? 'green' : method === 'DELETE' ? 'red' : 'orange';
             return <Tag color={color}>{method}</Tag>;
