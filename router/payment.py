@@ -79,8 +79,14 @@ async def fetch_invoice_status_qr(invoice_id: int):
             <meta http-equiv="refresh" content="3">
         </head>
         <body style="font-family: sans-serif; text-align: center; padding: 40px; color: #666;">
-            <h3>Generating securing KHQR Code Matrix...</h3>
-            <p>Please wait a moment while we build the runtime image components.</p>
+            <h3>
+                កំពុងបង្កើតកូដ KHQR...<br>
+                Generating secure KHQR Code Matrix...
+            </h3>
+            <p>
+                សូមរង់ចាំបន្តិច...<br>
+                Please wait a moment while we build the runtime image components.
+            </p>
         </body>
         </html>
         """
@@ -89,17 +95,30 @@ async def fetch_invoice_status_qr(invoice_id: int):
         return f"""
         <div style="font-family: sans-serif; text-align: center; padding: 40px; max-width: 350px; margin: auto; background: #fff; border-radius: 24px; border: 1px solid #e0e0e0;">
             <div style="font-size: 56px; color: #3caf47;">✓</div>
-            <h2 style="color: #333; margin-top: 10px;">Payment Verified!</h2>
-            <p style="color: #666;">Thank you. Your payment of {float(amount):,.2f} {currency} has been credited to {merchant_name}.</p>
+            <h2 style="color: #333; margin-top: 10px;">
+                ការទូទាត់ទទួលបានជោគជ័យ!<br>
+                Payment Verified!
+            </h2>
+            <p style="color: #666; line-height: 1.5;">
+                សូមអរគុណ! ការទូទាត់ចំនួន <b>{float(amount):,.2f} {currency}</b> ត្រូវបានផ្ទេរទៅកាន់ <b>{merchant_name}</b>។<br>
+                Thank you. Your payment of <b>{float(amount):,.2f} {currency}</b> has been credited to <b>{merchant_name}</b>.
+            </p>
         </div>
         """
 
     if status == "EXPIRED" or status == "FAILED":
+        khmer_status = "ផុតកំណត់" if status == "EXPIRED" else "បរាជ័យ"
         return f"""
         <div style="font-family: sans-serif; text-align: center; padding: 40px; max-width: 350px; margin: auto; background: #fff; border-radius: 24px; border: 1px solid #e0e0e0;">
             <div style="font-size: 56px; color: #ed1116;">✗</div>
-            <h2 style="color: #333; margin-top: 10px;">Payment {status.capitalize()}</h2>
-            <p style="color: #666;">This QR code is no longer valid. Please generate a new one.</p>
+            <h2 style="color: #333; margin-top: 10px;">
+                ការទូទាត់{khmer_status}<br>
+                Payment {status.capitalize()}
+            </h2>
+            <p style="color: #666; line-height: 1.5;">
+                កូដ QR នេះលែងមានសុពលភាពហើយ។ សូមបង្កើតថ្មីមួយទៀត។<br>
+                This QR code is no longer valid. Please generate a new one.
+            </p>
         </div>
         """
 
@@ -133,7 +152,8 @@ async def fetch_invoice_status_qr(invoice_id: int):
             </qr-wrapper>
             
             <p style="text-align: center; color: #878787; font-size: 12px; margin-top: 15px; margin-bottom: 0; line-height: 16px;">
-                អាចទូទាត់ប្រាក់តាមធនាគារដែលគាំទ្រ QRCODE KHQR 
+                អាចទូទាត់ប្រាក់តាមធនាគារដែលគាំទ្រ KHQR<br>
+                Pay with any bank that supports KHQR
             </p>
         </card-body>
     </payment-card>
