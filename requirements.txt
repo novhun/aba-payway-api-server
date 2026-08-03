@@ -10,6 +10,7 @@ exceptiongroup==1.3.1
 fastapi==0.128.8
 greenlet==3.2.5
 h11==0.16.0
+httpx==0.27.0
 idna==3.18
 pillow==11.3.0
 playwright==1.60.0
