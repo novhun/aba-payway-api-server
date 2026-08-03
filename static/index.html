@@ -148,7 +148,7 @@
     const { Layout, Menu, Table, Card, Row, Col, Select, Typography, ConfigProvider, Space, Tag, Button, Modal, Form, Input, message, DatePicker, Statistic, Switch, Tabs } = antd;
     const { Header, Content, Footer, Sider } = Layout;
     const { Title, Text } = Typography;
-    const { GlobalOutlined, CheckCircleOutlined, SyncOutlined, DatabaseOutlined, ShopOutlined, PlusOutlined, UserOutlined, LockOutlined, LoginOutlined, LogoutOutlined, SettingOutlined, LineChartOutlined, EyeOutlined, EyeInvisibleOutlined, AppstoreOutlined, QrcodeOutlined, DownloadOutlined, ApiOutlined } = icons;
+    const { GlobalOutlined, CheckCircleOutlined, SyncOutlined, CloseCircleOutlined, ClockCircleOutlined, DatabaseOutlined, ShopOutlined, PlusOutlined, UserOutlined, LockOutlined, LoginOutlined, LogoutOutlined, SettingOutlined, LineChartOutlined, EyeOutlined, EyeInvisibleOutlined, AppstoreOutlined, QrcodeOutlined, DownloadOutlined, ApiOutlined } = icons;
 
     function App() {
       const [token, setToken] = useState(localStorage.getItem('adminToken'));
@@ -714,9 +714,15 @@
         { title: t.amount || 'Amount', key: 'amount', render: (_, record) => <Text type="success" strong>{parseFloat(record.amount).toLocaleString()} {record.currency}</Text> },
         {
           title: t.status || 'Status', key: 'status', dataIndex: 'status', render: (status) => {
-            let color = status === 'SUCCESS' ? 'green' : 'orange';
-            let icon = status === 'SUCCESS' ? <CheckCircleOutlined /> : <SyncOutlined spin />;
-            return <Tag color={color} icon={icon}>{status}</Tag>;
+            let color, icon;
+            switch(status) {
+              case 'SUCCESS': color = 'green'; icon = <CheckCircleOutlined />; break;
+              case 'PENDING': color = 'orange'; icon = <SyncOutlined spin />; break;
+              case 'FAILED': color = 'red'; icon = <CloseCircleOutlined />; break;
+              case 'EXPIRED': color = 'default'; icon = <ClockCircleOutlined />; break;
+              default: color = 'default'; icon = <ClockCircleOutlined />;
+            }
+            return <Tag color={color} icon={icon} style={{ minWidth: 90, textAlign: 'center' }}>{status}</Tag>;
           }
         },
         { title: t.updated || 'Updated At', dataIndex: 'updated_at', key: 'updated_at', render: (text) => text ? new Date(text).toLocaleString() : '-' }
@@ -1364,6 +1370,7 @@ echo $result;
                           <Select.Option value="PENDING">PENDING</Select.Option>
                           <Select.Option value="SUCCESS">SUCCESS</Select.Option>
                           <Select.Option value="FAILED">FAILED</Select.Option>
+                          <Select.Option value="EXPIRED">EXPIRED</Select.Option>
                         </Select>
                         <Select value={ledgerFilters.merchant_name} onChange={v => setLedgerFilters({...ledgerFilters, merchant_name: v})} style={{ width: 180 }}>
                           <Select.Option value="ALL">{t.merchant_name || 'Merchant Name'}</Select.Option>
