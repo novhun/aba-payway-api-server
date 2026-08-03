@@ -90,7 +90,7 @@ async def fetch_invoice_status_qr(invoice_id: int):
         <div style="font-family: sans-serif; text-align: center; padding: 40px; max-width: 350px; margin: auto; background: #fff; border-radius: 24px; border: 1px solid #e0e0e0;">
             <div style="font-size: 56px; color: #3caf47;">✓</div>
             <h2 style="color: #333; margin-top: 10px;">Payment Verified!</h2>
-            <p style="color: #666;">Thank you. Your payment of {int(amount):,} {currency} has been credited to {merchant_name}.</p>
+            <p style="color: #666;">Thank you. Your payment of {float(amount):,.2f} {currency} has been credited to {merchant_name}.</p>
         </div>
         """
 
@@ -123,7 +123,7 @@ async def fetch_invoice_status_qr(invoice_id: int):
             <account-holder style="display: block; font-size: 16px; color: #333333; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">{merchant_name}</account-holder>
             
             <display-amount style="display: block; font-size: 42px; font-weight: bold; color: #111111; margin-top: 8px;">
-                {int(amount):,} <span style="font-size: 18px; font-weight: 500; color: #666; margin-left: 2px;">{currency}</span>
+                {float(amount):,.2f} <span style="font-size: 18px; font-weight: 500; color: #666; margin-left: 2px;">{currency}</span>
             </display-amount>
 
             <dashed-divider style="display: block; border-top: 2px dashed #e0e0e0; margin: 22px 0;"></dashed-divider>

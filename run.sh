@@ -2,7 +2,7 @@
 
 VENV_DIR="venv"
 REQ_FILE="requirements.txt"
-RUN_CMD="uvicorn main:app --host 0.0.0.0 --port 8001"
+RUN_CMD="uvicorn main:app --host 0.0.0.0 --port 8001 --reload"
 
 # Helper function to activate the virtual environment
 activate_venv() {

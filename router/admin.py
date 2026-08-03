@@ -220,14 +220,14 @@ async def get_admin_ledger(
         
         if start_date:
             try:
-                start_dt = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
+                start_dt = datetime.fromisoformat(start_date.replace("Z", "+00:00")).replace(tzinfo=None)
                 query = query.where(OrderTracking.updated_at >= start_dt)
             except ValueError:
                 pass
                 
         if end_date:
             try:
-                end_dt = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
+                end_dt = datetime.fromisoformat(end_date.replace("Z", "+00:00")).replace(tzinfo=None) + timedelta(days=1, microseconds=-1)
                 query = query.where(OrderTracking.updated_at <= end_dt)
             except ValueError:
                 pass
@@ -285,14 +285,14 @@ async def get_admin_analytics(
         
         if start_date:
             try:
-                start_dt = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
+                start_dt = datetime.fromisoformat(start_date.replace("Z", "+00:00")).replace(tzinfo=None)
                 query = query.where(ApiLog.created_at >= start_dt)
             except ValueError:
                 pass
         
         if end_date:
             try:
-                end_dt = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
+                end_dt = datetime.fromisoformat(end_date.replace("Z", "+00:00")).replace(tzinfo=None) + timedelta(days=1, microseconds=-1)
                 query = query.where(ApiLog.created_at <= end_dt)
             except ValueError:
                 pass
