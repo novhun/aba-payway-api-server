@@ -112,7 +112,7 @@ def get_current_admin(credentials: HTTPBasicCredentials = Depends(security)):
         )
     return credentials.username
 
-@router.get("/", response_class=FileResponse)
+@router.api_route("/", methods=["GET", "HEAD"], response_class=FileResponse)
 async def admin_dashboard_ui():
     return FileResponse("static/index.html")
 

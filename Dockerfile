@@ -29,8 +29,8 @@ RUN playwright install --with-deps chromium
 # Copy the rest of the application code
 COPY . .
 
-# Expose the default port
-EXPOSE 8000
+# Expose the port (Render uses 10000 by default)
+EXPOSE 10000
 
 # Command to run the application using dynamic PORT for Render / Docker
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-10000}"]
