@@ -4,8 +4,11 @@ services:
   payway-api:
     build: .
     container_name: aba-payway-api
+    shm_size: '2gb'
+    ipc: host
     ports:
       - "8000:8000"
+      - "8001:8000"
     volumes:
       - ./aba_automation.db:/app/aba_automation.db
     env_file:

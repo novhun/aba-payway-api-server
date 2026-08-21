@@ -4,14 +4,17 @@ FROM python:3.9-slim
 # Set environment variables to avoid python buffering and ensure output logs appear immediately
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Set the working directory in the container
 WORKDIR /app
 
-# Install system dependencies
-# Playwright needs some base OS utilities to download browsers properly
-RUN apt-get update && apt-get install -y \
+# Install system dependencies, CA certificates, and fonts for Chromium in Linux
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    ca-certificates \
+    fonts-liberation \
+    fonts-noto-color-emoji \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy only the requirements first, to leverage Docker cache
