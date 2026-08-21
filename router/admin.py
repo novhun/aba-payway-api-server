@@ -17,6 +17,52 @@ import secrets
 from typing import Optional
 from sqlalchemy import func, delete
 from datetime import datetime, timedelta
+import psutil
+from service.playwright_worker import get_browser_stats
+
+def get_system_metrics() -> dict:
+    """Calculates live host and process metrics: CPU, RAM, Storage, Process Memory and Browser stats."""
+    try:
+        cpu_percent = psutil.cpu_percent(interval=None)
+        cpu_count = psutil.cpu_count(logical=True) or 1
+        mem = psutil.virtual_memory()
+        disk = psutil.disk_usage(os.getcwd())
+        proc = psutil.Process()
+        proc_mem_mb = round(proc.memory_info().rss / (1024 * 1024), 1)
+        
+        browser_info = get_browser_stats()
+        
+        return {
+            "cpu": {
+                "percent": cpu_percent,
+                "cores": cpu_count
+            },
+            "ram": {
+                "total_gb": round(mem.total / (1024 ** 3), 2),
+                "used_gb": round(mem.used / (1024 ** 3), 2),
+                "free_gb": round(mem.available / (1024 ** 3), 2),
+                "percent": mem.percent
+            },
+            "storage": {
+                "total_gb": round(disk.total / (1024 ** 3), 2),
+                "used_gb": round(disk.used / (1024 ** 3), 2),
+                "free_gb": round(disk.free / (1024 ** 3), 2),
+                "percent": disk.percent
+            },
+            "process": {
+                "memory_mb": proc_mem_mb
+            },
+            "browser": browser_info
+        }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "cpu": {"percent": 0, "cores": 1},
+            "ram": {"total_gb": 0, "used_gb": 0, "free_gb": 0, "percent": 0},
+            "storage": {"total_gb": 0, "used_gb": 0, "free_gb": 0, "percent": 0},
+            "process": {"memory_mb": 0},
+            "browser": {"is_running": False, "active_contexts": 0}
+        }
 
 class ApiKeyCreateRequest(BaseModel):
     name: str
@@ -196,6 +242,25 @@ async def get_admin_dashboard(admin: str = Depends(get_current_admin)):
                     
         trend_list = [trend_data[d] for d in sorted(trend_data.keys())]
 
+        # Recent tasks (Live status)
+        recent_tasks_res = await db.execute(select(OrderTracking).order_by(desc(OrderTracking.id)).limit(20))
+        recent_tasks_raw = recent_tasks_res.scalars().all()
+        recent_tasks = []
+        for t in recent_tasks_raw:
+            recent_tasks.append({
+                "id": t.id,
+                "code_merchant": t.code_merchant,
+                "amount": t.amount,
+                "currency": t.currency,
+                "merchant_name": t.merchant_name,
+                "status": t.status,
+                "tran_id": t.tran_id,
+                "receipt_link": t.receipt_link,
+                "updated_at": t.updated_at.isoformat() if t.updated_at else None
+            })
+
+        sys_metrics = get_system_metrics()
+
         return {
             "total_orders": total_orders,
             "success_orders": success_orders,
@@ -203,8 +268,36 @@ async def get_admin_dashboard(admin: str = Depends(get_current_admin)):
             "active_api_keys": active_api_keys,
             "total_revenue_usd": total_revenue_usd,
             "total_revenue_khr": total_revenue_khr,
-            "trend": trend_list
+            "trend": trend_list,
+            "system_metrics": sys_metrics,
+            "recent_tasks": recent_tasks
         }
+
+@router.get("/api/v1/admin/live-status")
+async def get_admin_live_status(admin: str = Depends(get_current_admin)):
+    async with async_session() as db:
+        recent_tasks_res = await db.execute(select(OrderTracking).order_by(desc(OrderTracking.id)).limit(20))
+        recent_tasks_raw = recent_tasks_res.scalars().all()
+        recent_tasks = []
+        for t in recent_tasks_raw:
+            recent_tasks.append({
+                "id": t.id,
+                "code_merchant": t.code_merchant,
+                "amount": t.amount,
+                "currency": t.currency,
+                "merchant_name": t.merchant_name,
+                "status": t.status,
+                "tran_id": t.tran_id,
+                "receipt_link": t.receipt_link,
+                "updated_at": t.updated_at.isoformat() if t.updated_at else None
+            })
+            
+    sys_metrics = get_system_metrics()
+    return {
+        "system_metrics": sys_metrics,
+        "recent_tasks": recent_tasks,
+        "active_tasks_count": sys_metrics.get("browser", {}).get("active_contexts", 0)
+    }
 
 @router.get("/api/v1/admin/ledger")
 async def get_admin_ledger(

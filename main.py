@@ -17,6 +17,7 @@ from model.banned_ip import BannedIp
 from router.system import router as system_router
 from router.payment import router as payment_router
 from router.admin import router as admin_router
+from service.playwright_worker import init_browser, close_browser
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi import Request
 import httpx
@@ -75,7 +76,9 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     print("LOG: [Database] Storage tables verified clean.")
+    await init_browser()
     yield
+    await close_browser()
 
 cors_origins = ["*"]
 try:

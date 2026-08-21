@@ -138,6 +138,40 @@
       background: #1f1f1f !important;
       box-shadow: 0 -4px 12px rgba(0,0,0,0.4) !important;
     }
+
+    @keyframes pulse-live {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(82, 196, 26, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(82, 196, 26, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(82, 196, 26, 0); }
+    }
+    .live-dot {
+      width: 10px;
+      height: 10px;
+      background-color: #52c41a;
+      border-radius: 50%;
+      display: inline-block;
+      animation: pulse-live 1.8s infinite cubic-bezier(0.45, 0, 0.55, 1);
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    .metric-card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .metric-card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.08) !important;
+    }
+    .icon-wrapper-circle {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
   </style>
 
   <!-- React & ReactDOM -->
@@ -163,10 +197,10 @@
 
   <script type="text/babel">
     const { useState, useEffect, useCallback } = React;
-    const { Layout, Menu, Table, Card, Row, Col, Select, Typography, ConfigProvider, Space, Tag, Button, Modal, Form, Input, message, DatePicker, Statistic, Switch, Tabs } = antd;
+    const { Layout, Menu, Table, Card, Row, Col, Select, Typography, ConfigProvider, Space, Tag, Button, Modal, Form, Input, message, DatePicker, Statistic, Switch, Tabs, Progress, Badge, Tooltip, Divider } = antd;
     const { Header, Content, Footer, Sider } = Layout;
-    const { Title, Text } = Typography;
-    const { GlobalOutlined, CheckCircleOutlined, SyncOutlined, CloseCircleOutlined, ClockCircleOutlined, DatabaseOutlined, ShopOutlined, PlusOutlined, UserOutlined, LockOutlined, LoginOutlined, LogoutOutlined, SettingOutlined, LineChartOutlined, EyeOutlined, EyeInvisibleOutlined, AppstoreOutlined, QrcodeOutlined, DownloadOutlined, ApiOutlined } = icons;
+    const { Title, Text, Paragraph } = Typography;
+    const { GlobalOutlined, CheckCircleOutlined, SyncOutlined, CloseCircleOutlined, ClockCircleOutlined, DatabaseOutlined, ShopOutlined, PlusOutlined, UserOutlined, LockOutlined, LoginOutlined, LogoutOutlined, SettingOutlined, LineChartOutlined, EyeOutlined, EyeInvisibleOutlined, AppstoreOutlined, QrcodeOutlined, DownloadOutlined, ApiOutlined, HddOutlined, DashboardOutlined, ThunderboltOutlined, CloudServerOutlined, CodeOutlined, LoadingOutlined, PlayCircleOutlined, LinkOutlined, ReloadOutlined } = icons;
 
     function App() {
       const [token, setToken] = useState(localStorage.getItem('adminToken'));
@@ -294,8 +328,21 @@
         active_api_keys: 0,
         total_revenue_usd: 0,
         total_revenue_khr: 0,
-        trend: []
+        trend: [],
+        system_metrics: {
+          cpu: { percent: 0, cores: 1 },
+          ram: { total_gb: 0, used_gb: 0, free_gb: 0, percent: 0 },
+          storage: { total_gb: 0, used_gb: 0, free_gb: 0, percent: 0 },
+          process: { memory_mb: 0 },
+          browser: { is_running: false, active_contexts: 0 }
+        },
+        recent_tasks: []
       });
+
+      const [liveAutoRefresh, setLiveAutoRefresh] = useState(true);
+      const [lastSyncedTime, setLastSyncedTime] = useState(new Date().toLocaleTimeString());
+      const [taskStatusFilter, setTaskStatusFilter] = useState('ALL');
+      const [taskSearchText, setTaskSearchText] = useState('');
 
       useEffect(() => {
         fetch(`/assets/lang/${lang}.json`)
@@ -499,6 +546,35 @@
           fetchDashboard();
         }
       }, [token, currentView, fetchDashboard]);
+
+      useEffect(() => {
+        if (!token || currentView !== 'dashboard' || !liveAutoRefresh) return;
+        const interval = setInterval(() => {
+          fetch('/api/v1/admin/live-status', {
+            headers: { 'Authorization': `Basic ${token}` }
+          })
+            .then(res => {
+              if (res.status === 401) {
+                handleLogout();
+                return null;
+              }
+              return res.json();
+            })
+            .then(json => {
+              if (json) {
+                setDashboardData(prev => ({
+                  ...prev,
+                  system_metrics: json.system_metrics || prev.system_metrics,
+                  recent_tasks: json.recent_tasks || prev.recent_tasks
+                }));
+                setLastSyncedTime(new Date().toLocaleTimeString());
+              }
+            })
+            .catch(err => console.error("Live status poll error:", err));
+        }, 2500);
+
+        return () => clearInterval(interval);
+      }, [token, currentView, liveAutoRefresh]);
 
       useEffect(() => {
         if (token && currentView === 'ledger') {
@@ -1191,29 +1267,339 @@ echo $result;
 
                 {currentView === 'dashboard' && (
                   <div>
+                    {/* Top Live Status Control Bar */}
+                    <Card 
+                      bordered={false} 
+                      style={{ 
+                        marginBottom: 20, 
+                        borderRadius: 14, 
+                        boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+                        background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(255,255,255,0.2)' : '#ffffff')
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span className="live-dot" style={{ backgroundColor: liveAutoRefresh ? '#52c41a' : '#fa8c16' }}></span>
+                          <Text strong style={{ fontSize: 16 }}>
+                            {t.live_system || "Live System & Resources Monitoring"}
+                          </Text>
+                          <Tag color={dashboardData.system_metrics?.browser?.is_running ? "green" : "orange"} icon={<GlobalOutlined />}>
+                            {dashboardData.system_metrics?.browser?.is_running ? (t.engine_online || "Chromium Online") : (t.engine_offline || "Engine Offline")}
+                          </Tag>
+                          {dashboardData.system_metrics?.browser?.active_contexts > 0 && (
+                            <Badge count={`${dashboardData.system_metrics.browser.active_contexts} Active Task(s)`} style={{ backgroundColor: '#1677ff' }} />
+                          )}
+                        </div>
+                        <Space size="middle">
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            {t.last_sync || "Last Synced"}: <b>{lastSyncedTime}</b>
+                          </Text>
+                          <Switch 
+                            checked={liveAutoRefresh} 
+                            onChange={setLiveAutoRefresh} 
+                            checkedChildren={t.auto_refresh || "Live (2.5s)"} 
+                            unCheckedChildren="Paused" 
+                          />
+                          <Button 
+                            icon={<ReloadOutlined spin={loading} />} 
+                            onClick={fetchDashboard} 
+                            size="middle"
+                            type="primary"
+                            ghost
+                          >
+                            {t.refresh || "Refresh"}
+                          </Button>
+                        </Space>
+                      </div>
+                    </Card>
+
+                    {/* Section 1: Real-time Host Resource Usage (CPU, RAM, Storage, Browser) */}
+                    <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                      {/* CPU Usage Card */}
+                      <Col xs={24} sm={12} lg={6}>
+                        <Card bordered={false} className="metric-card-hover" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                            <div>
+                              <Text type="secondary" style={{ fontSize: 13 }}>{t.cpu_usage || "CPU Load"}</Text>
+                              <div style={{ fontSize: 26, fontWeight: 'bold', marginTop: 4, color: (dashboardData.system_metrics?.cpu?.percent || 0) > 80 ? '#f5222d' : 'inherit' }}>
+                                {dashboardData.system_metrics?.cpu?.percent ?? 0}%
+                              </div>
+                            </div>
+                            <div className="icon-wrapper-circle" style={{ background: 'rgba(250, 140, 22, 0.12)', color: '#fa8c16' }}>
+                              <ThunderboltOutlined />
+                            </div>
+                          </div>
+                          <Progress 
+                            percent={dashboardData.system_metrics?.cpu?.percent || 0} 
+                            showInfo={false} 
+                            strokeColor={(dashboardData.system_metrics?.cpu?.percent || 0) > 80 ? '#f5222d' : ((dashboardData.system_metrics?.cpu?.percent || 0) > 60 ? '#fa8c16' : '#52c41a')} 
+                            size="small" 
+                          />
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 12, color: '#888' }}>
+                            <span><DashboardOutlined /> {dashboardData.system_metrics?.cpu?.cores || 1} {t.cores || "Cores"}</span>
+                            <span>Host Active</span>
+                          </div>
+                        </Card>
+                      </Col>
+
+                      {/* RAM Memory Card */}
+                      <Col xs={24} sm={12} lg={6}>
+                        <Card bordered={false} className="metric-card-hover" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                            <div>
+                              <Text type="secondary" style={{ fontSize: 13 }}>{t.ram_usage || "Memory (RAM)"}</Text>
+                              <div style={{ fontSize: 26, fontWeight: 'bold', marginTop: 4 }}>
+                                {dashboardData.system_metrics?.ram?.percent ?? 0}%
+                              </div>
+                            </div>
+                            <div className="icon-wrapper-circle" style={{ background: 'rgba(22, 119, 255, 0.12)', color: '#1677ff' }}>
+                              <CloudServerOutlined />
+                            </div>
+                          </div>
+                          <Progress 
+                            percent={dashboardData.system_metrics?.ram?.percent || 0} 
+                            showInfo={false} 
+                            strokeColor={(dashboardData.system_metrics?.ram?.percent || 0) > 85 ? '#f5222d' : '#1677ff'} 
+                            size="small" 
+                          />
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 12, color: '#888' }}>
+                            <span>{t.used || "Used"}: <b>{dashboardData.system_metrics?.ram?.used_gb ?? 0} GB</b></span>
+                            <span>{t.free || "Free"}: {dashboardData.system_metrics?.ram?.free_gb ?? 0} GB</span>
+                          </div>
+                        </Card>
+                      </Col>
+
+                      {/* Storage Disk Card */}
+                      <Col xs={24} sm={12} lg={6}>
+                        <Card bordered={false} className="metric-card-hover" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                            <div>
+                              <Text type="secondary" style={{ fontSize: 13 }}>{t.storage_usage || "Disk Storage"}</Text>
+                              <div style={{ fontSize: 26, fontWeight: 'bold', marginTop: 4 }}>
+                                {dashboardData.system_metrics?.storage?.percent ?? 0}%
+                              </div>
+                            </div>
+                            <div className="icon-wrapper-circle" style={{ background: 'rgba(114, 46, 209, 0.12)', color: '#722ed1' }}>
+                              <HddOutlined />
+                            </div>
+                          </div>
+                          <Progress 
+                            percent={dashboardData.system_metrics?.storage?.percent || 0} 
+                            showInfo={false} 
+                            strokeColor="#722ed1" 
+                            size="small" 
+                          />
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 12, color: '#888' }}>
+                            <span>{t.used || "Used"}: <b>{dashboardData.system_metrics?.storage?.used_gb ?? 0} GB</b></span>
+                            <span>{t.free || "Free"}: {dashboardData.system_metrics?.storage?.free_gb ?? 0} GB</span>
+                          </div>
+                        </Card>
+                      </Col>
+
+                      {/* Automation Engine & Active Tasks Card */}
+                      <Col xs={24} sm={12} lg={6}>
+                        <Card bordered={false} className="metric-card-hover" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                            <div>
+                              <Text type="secondary" style={{ fontSize: 13 }}>{t.browser_engine || "Chromium Engine"}</Text>
+                              <div style={{ fontSize: 20, fontWeight: 'bold', marginTop: 4, color: dashboardData.system_metrics?.browser?.is_running ? '#52c41a' : '#fa8c16' }}>
+                                {dashboardData.system_metrics?.browser?.is_running ? "Singleton Ready" : "Standby"}
+                              </div>
+                            </div>
+                            <div className="icon-wrapper-circle" style={{ background: 'rgba(82, 196, 26, 0.12)', color: '#52c41a' }}>
+                              <GlobalOutlined />
+                            </div>
+                          </div>
+                          <div style={{ background: themeMode === 'dark' ? '#141414' : '#fafafa', padding: '6px 10px', borderRadius: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: 12 }}>{t.active_contexts || "Active Tasks"}:</span>
+                            <Tag color={dashboardData.system_metrics?.browser?.active_contexts > 0 ? "processing" : "default"}>
+                              {dashboardData.system_metrics?.browser?.active_contexts ?? 0} running
+                            </Tag>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 12, color: '#888' }}>
+                            <span>{t.process_ram || "Engine RAM"}: <b>{dashboardData.system_metrics?.process?.memory_mb ?? 0} MB</b></span>
+                            <span>Low-Overhead</span>
+                          </div>
+                        </Card>
+                      </Col>
+                    </Row>
+
+                    {/* Section 2: Order & Revenue Statistics */}
                     <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
                       <Col xs={24} sm={12} md={6}>
-                        <Card bordered={false} style={{ boxShadow: '0 1px 2px -2px rgba(0,0,0,0.16)' }}>
-                          <Statistic title={t.total_orders || "Total Orders"} value={dashboardData.total_orders} prefix={<DatabaseOutlined />} />
+                        <Card bordered={false} className="metric-card-hover" style={{ boxShadow: '0 1px 2px -2px rgba(0,0,0,0.16)' }}>
+                          <Statistic title={t.total_orders || "Total Orders"} value={dashboardData.total_orders} prefix={<DatabaseOutlined style={{ color: '#1677ff' }} />} />
                         </Card>
                       </Col>
                       <Col xs={24} sm={12} md={6}>
-                        <Card bordered={false} style={{ boxShadow: '0 1px 2px -2px rgba(0,0,0,0.16)' }}>
+                        <Card bordered={false} className="metric-card-hover" style={{ boxShadow: '0 1px 2px -2px rgba(0,0,0,0.16)' }}>
                           <Statistic title={t.success_orders || "Success Orders"} value={dashboardData.success_orders} valueStyle={{ color: '#3f8600' }} prefix={<CheckCircleOutlined />} />
                         </Card>
                       </Col>
                       <Col xs={24} sm={12} md={6}>
-                        <Card bordered={false} style={{ boxShadow: '0 1px 2px -2px rgba(0,0,0,0.16)' }}>
-                          <Statistic title={t.revenue_usd || "Revenue (USD)"} value={dashboardData.total_revenue_usd} precision={2} prefix="$" />
+                        <Card bordered={false} className="metric-card-hover" style={{ boxShadow: '0 1px 2px -2px rgba(0,0,0,0.16)' }}>
+                          <Statistic title={t.revenue_usd || "Revenue (USD)"} value={dashboardData.total_revenue_usd} precision={2} prefix="$" valueStyle={{ color: '#1677ff' }} />
                         </Card>
                       </Col>
                       <Col xs={24} sm={12} md={6}>
-                        <Card bordered={false} style={{ boxShadow: '0 1px 2px -2px rgba(0,0,0,0.16)' }}>
-                          <Statistic title={t.revenue_khr || "Revenue (KHR)"} value={dashboardData.total_revenue_khr} prefix="៛" />
+                        <Card bordered={false} className="metric-card-hover" style={{ boxShadow: '0 1px 2px -2px rgba(0,0,0,0.16)' }}>
+                          <Statistic title={t.revenue_khr || "Revenue (KHR)"} value={dashboardData.total_revenue_khr} prefix="៛" valueStyle={{ color: '#ed1116' }} />
                         </Card>
                       </Col>
                     </Row>
+
+                    {/* Section 3: Real-Time Tasks & Live Automation Table */}
+                    <Card 
+                      title={
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <SyncOutlined spin={liveAutoRefresh} style={{ color: '#1677ff', fontSize: 18 }} />
+                            <span style={{ fontWeight: 'bold', fontSize: 16 }}>{t.realtime_tasks || "Real-Time Automation Tasks & Transactions"}</span>
+                            <Tag color="cyan">{(dashboardData.recent_tasks || []).length} Latest</Tag>
+                          </div>
+                          <Space size="small">
+                            <Select 
+                              value={taskStatusFilter} 
+                              onChange={setTaskStatusFilter} 
+                              style={{ width: 130 }}
+                              size="small"
+                              options={[
+                                { value: 'ALL', label: 'All Status' },
+                                { value: 'PENDING', label: 'Processing' },
+                                { value: 'SUCCESS', label: 'Success' },
+                                { value: 'EXPIRED', label: 'Expired' },
+                                { value: 'FAILED', label: 'Failed' }
+                              ]}
+                            />
+                            <Input.Search 
+                              placeholder="Search Task / Merchant..." 
+                              value={taskSearchText} 
+                              onChange={(e) => setTaskSearchText(e.target.value)} 
+                              style={{ width: 180 }} 
+                              size="small"
+                              allowClear
+                            />
+                          </Space>
+                        </div>
+                      } 
+                      bordered={false} 
+                      style={{ marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', borderRadius: 12 }}
+                    >
+                      <Table 
+                        dataSource={(dashboardData.recent_tasks || []).filter(task => {
+                          if (taskStatusFilter !== 'ALL' && task.status !== taskStatusFilter) return false;
+                          if (taskSearchText) {
+                            const query = taskSearchText.toLowerCase();
+                            return (
+                              String(task.id).includes(query) ||
+                              (task.merchant_name && task.merchant_name.toLowerCase().includes(query)) ||
+                              (task.code_merchant && task.code_merchant.toLowerCase().includes(query)) ||
+                              (task.tran_id && task.tran_id.toLowerCase().includes(query))
+                            );
+                          }
+                          return true;
+                        })}
+                        rowKey="id"
+                        pagination={{ pageSize: 8, showSizeChanger: false }}
+                        size="middle"
+                        columns={[
+                          {
+                            title: t.task_id || "Task ID",
+                            dataIndex: 'id',
+                            key: 'id',
+                            width: 100,
+                            render: (id) => <Tag color="blue" style={{ fontWeight: 600 }}>#{id}</Tag>
+                          },
+                          {
+                            title: t.status || "Status",
+                            dataIndex: 'status',
+                            key: 'status',
+                            width: 140,
+                            render: (status) => {
+                              if (status === 'PENDING') {
+                                return <Tag icon={<SyncOutlined spin />} color="processing">{t.pending || "PROCESSING"}</Tag>;
+                              } else if (status === 'SUCCESS') {
+                                return <Tag icon={<CheckCircleOutlined />} color="success">{t.success_tag || "SUCCESS"}</Tag>;
+                              } else if (status === 'EXPIRED') {
+                                return <Tag icon={<ClockCircleOutlined />} color="warning">{t.expired_tag || "EXPIRED"}</Tag>;
+                              } else {
+                                return <Tag icon={<CloseCircleOutlined />} color="error">{t.failed_tag || "FAILED"}</Tag>;
+                              }
+                            }
+                          },
+                          {
+                            title: t.merchant || "Merchant",
+                            key: 'merchant',
+                            render: (_, r) => (
+                              <div>
+                                <Text strong>{r.merchant_name || 'KHQR Merchant'}</Text>
+                                <div style={{ fontSize: 11, color: '#888' }}>{r.code_merchant}</div>
+                              </div>
+                            )
+                          },
+                          {
+                            title: t.amount || "Amount",
+                            key: 'amount',
+                            render: (_, r) => (
+                              <div>
+                                <Text strong style={{ fontSize: 15 }}>
+                                  {parseFloat(r.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </Text>
+                                <Tag color={r.currency === 'USD' ? 'blue' : 'red'} style={{ marginLeft: 6, fontSize: 11 }}>
+                                  {r.currency}
+                                </Tag>
+                              </div>
+                            )
+                          },
+                          {
+                            title: t.tran_id || "Transaction ID",
+                            dataIndex: 'tran_id',
+                            key: 'tran_id',
+                            render: (tran_id) => tran_id ? <Text copyable={{ text: tran_id }} code>{tran_id}</Text> : <Text type="secondary">-</Text>
+                          },
+                          {
+                            title: t.updated || "Time",
+                            dataIndex: 'updated_at',
+                            key: 'updated_at',
+                            render: (d) => <Text style={{ fontSize: 12 }}>{formatUTC(d)}</Text>
+                          },
+                          {
+                            title: t.action || "Action",
+                            key: 'action',
+                            width: 120,
+                            render: (_, r) => (
+                              <Space>
+                                {r.receipt_link ? (
+                                  <Button 
+                                    type="link" 
+                                    icon={<LinkOutlined />} 
+                                    size="small" 
+                                    href={r.receipt_link} 
+                                    target="_blank"
+                                  >
+                                    {t.view_receipt || "Receipt"}
+                                  </Button>
+                                ) : (
+                                  <Button 
+                                    type="text" 
+                                    size="small" 
+                                    icon={<EyeOutlined />} 
+                                    onClick={() => {
+                                      setTestInvoiceId(String(r.id));
+                                      setCurrentView('tester');
+                                    }}
+                                  >
+                                    Verify
+                                  </Button>
+                                )}
+                              </Space>
+                            )
+                          }
+                        ]}
+                      />
+                    </Card>
                     
+                    {/* Section 4: 7-Day Trend Chart & System Info */}
                     <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
                       <Col xs={24} md={16}>
                         <Card title={
