@@ -425,14 +425,15 @@ async def send_test_telegram_message(bot_token: str, chat_id: str) -> Dict[str, 
         return {"ok": False, "error": "Please enter a valid Chat ID or Group ID."}
 
     msg = f"""
-🤖 <b>Telegram Alert Test / សាកល្បងការតភ្ជាប់</b>
-━━━━━━━━━━━━━━━━━━
-✅ <b>Status:</b> Connected & Operational
+🤖 <b>ការតេស្តប្រព័ន្ធជូនដំណឹង / TEST ALERT</b>
+⚡ <b>TELEGRAM INTEGRATION VERIFIED</b>
+━━━━━━━━━━━━━━━━━━━━
+🟢 <b>ស្ថានភាព / Status:</b> <b>Connected &amp; Active</b>
 👑 <b>Bot:</b> {bot_name} ({bot_user})
 💬 <b>Target Chats:</b> <code>{', '.join(targets)}</code>
-⏱️ <b>Time:</b> {now_str}
-━━━━━━━━━━━━━━━━━━
-🔔 <i>You will receive instant payment alerts here!</i>
+⏱️ <b>Server Time:</b> <code>{now_str}</code>
+━━━━━━━━━━━━━━━━━━━━
+🔔 <i>អ្នកនឹងទទួលបានការជូនដំណឹងពីការទូទាត់ប្រាក់ភ្លាមៗនៅទីនេះ! (Instant payment alerts will be delivered here).</i>
 """
     results = await broadcast_telegram_message(bot_token, targets, msg.strip())
     # If at least one succeeded, return ok
@@ -486,22 +487,37 @@ async def send_payment_success_alert(order_data: Dict[str, Any]):
         order_id = order_data.get("id", "N/A")
         amount = order_data.get("amount", "0.00")
         currency = order_data.get("currency", "USD").upper()
-        merchant_name = order_data.get("merchant_name") or order_data.get("code_merchant") or "Default Store"
-        tran_id = order_data.get("tran_id") or "N/A"
+        merchant_name = order_data.get("merchant_name") or order_data.get("code_merchant") or "Store"
+        tran_id = order_data.get("tran_id")
+        receipt_link = order_data.get("receipt_link")
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        currency_symbol = "$" if currency == "USD" else "៛"
+        # Format Amount with proper currency symbol and decimals
+        try:
+            val = float(amount)
+            if currency == "USD":
+                amount_formatted = f"+${val:,.2f} USD"
+            else:
+                amount_formatted = f"+{int(val):,} ៛ KHR"
+        except Exception:
+            amount_formatted = f"+{amount} {currency}"
+
+        receipt_row = f"\n🧾 <b>បង្កាន់ដៃ / Receipt:</b> <a href=\"{receipt_link}\">មើលបង្កាន់ដៃ (Download Receipt)</a>" if receipt_link else ""
+        tran_row = f"\n🆔 <b>Ref ID:</b> <code>{tran_id}</code>" if (tran_id and tran_id != "N/A") else ""
+        code_tag = f" (<code>{code_merchant}</code>)" if code_merchant and code_merchant != merchant_name else ""
 
         msg = f"""
-🎉 <b>ការទូទាត់ទទួលបានជោគជ័យ! / Payment Verified!</b>
-━━━━━━━━━━━━━━━━━━
-🏪 <b>Merchant:</b> {merchant_name}
-💵 <b>Amount:</b> <b>{currency_symbol}{amount} {currency}</b>
-🧾 <b>Invoice ID:</b> <code>#{order_id}</code>
-🆔 <b>Transaction ID:</b> <code>{tran_id}</code>
-⏱️ <b>Time:</b> {now_str}
-━━━━━━━━━━━━━━━━━━
-✅ <i>Verified by ABA PayWay Engine</i>
+🎉 <b>ការទូទាត់ទទួលបានជោគជ័យ!</b>
+⚡ <b>PAYMENT RECEIVED &amp; VERIFIED</b>
+━━━━━━━━━━━━━━━━━━━━
+💵 <b>ចំនួនប្រាក់ / Amount:</b> <b>{amount_formatted}</b>
+🟢 <b>ស្ថានភាព / Status:</b> <b>ជោគជ័យ (COMPLETED)</b>
+━━━━━━━━━━━━━━━━━━━━
+🏪 <b>ហាង / Store:</b> <b>{merchant_name}</b>{code_tag}
+🧾 <b>វិក្កយបត្រ / Invoice:</b> <code>#{order_id}</code>{tran_row}
+⏱️ <b>កាលបរិច្ឆេទ / Time:</b> <code>{now_str}</code>{receipt_row}
+━━━━━━━━━━━━━━━━━━━━
+🛡️ <i>ផ្ទៀងផ្ទាត់ដោយស្វ័យប្រវត្តិតាមរយៈ ABA PayWay System</i>
 """
         await broadcast_telegram_message(bot_token, target_chat_ids, msg.strip())
     except Exception as e:
@@ -543,15 +559,27 @@ async def send_order_created_alert(order_data: Dict[str, Any]):
         merchant_code = order_data.get("code_merchant", "N/A")
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+        try:
+            val = float(amount)
+            if currency == "USD":
+                amount_formatted = f"${val:,.2f} USD"
+            else:
+                amount_formatted = f"{int(val):,} ៛ KHR"
+        except Exception:
+            amount_formatted = f"{amount} {currency}"
+
         msg = f"""
-🧾 <b>វិក្កយបត្រថ្មីត្រូវបានបង្កើត / New Invoice Created</b>
-━━━━━━━━━━━━━━━━━━
-🏪 <b>Merchant Code:</b> <code>{merchant_code}</code>
-💵 <b>Amount:</b> {amount} {currency}
-🧾 <b>Invoice ID:</b> <code>#{order_id}</code>
-⏱️ <b>Time:</b> {now_str}
-⏳ <b>Status:</b> <i>Waiting for Customer Scan...</i>
-━━━━━━━━━━━━━━━━━━
+🧾 <b>វិក្កយបត្រថ្មីត្រូវបានបង្កើត</b>
+⚡ <b>NEW INVOICE GENERATED</b>
+━━━━━━━━━━━━━━━━━━━━
+💵 <b>ចំនួនទឹកប្រាក់ / Amount:</b> <b>{amount_formatted}</b>
+⏳ <b>ស្ថានភាព / Status:</b> <b>រង់ចាំស្កេន (WAITING SCAN)</b>
+━━━━━━━━━━━━━━━━━━━━
+🏪 <b>ហាង / Merchant:</b> <code>{merchant_code}</code>
+🧾 <b>វិក្កយបត្រ / Invoice ID:</b> <code>#{order_id}</code>
+⏱️ <b>ម៉ោងបង្កើត / Created At:</b> <code>{now_str}</code>
+━━━━━━━━━━━━━━━━━━━━
+🔔 <i>កំពុងរង់ចាំអតិថិជនស្កេនទូទាត់ប្រាក់ KHQR...</i>
 """
         await broadcast_telegram_message(bot_token, target_chat_ids, msg.strip())
     except Exception as e:

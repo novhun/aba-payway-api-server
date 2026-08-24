@@ -178,6 +178,7 @@ async def get_admin_data(admin: str = Depends(get_current_admin)):
             "merchant_logo_url": m.merchant_logo_url,
             "payment_link_khr": m.payment_link_khr,
             "payment_link_usd": m.payment_link_usd,
+            "telegram_chat_id": m.telegram_chat_id or "",
             "status": m.status,
             "created_at": m.created_at.isoformat() if m.created_at else None
         })

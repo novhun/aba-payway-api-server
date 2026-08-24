@@ -185,7 +185,8 @@ async def run_payment_worker(db_row_id: int, amount: str, currency: str, target_
                         "id": db_row_id,
                         "amount": amount,
                         "currency": currency,
-                        "tran_id": state.get("tran_id", "N/A"),
+                        "tran_id": state.get("tran_id") or "N/A",
+                        "receipt_link": receipt_link,
                         "merchant_name": state.get("merchant_name", ""),
                         "code_merchant": code_merchant
                     }))
