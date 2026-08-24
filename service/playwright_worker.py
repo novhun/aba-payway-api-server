@@ -52,13 +52,37 @@ async def init_browser():
 
         launch_args = [
             "--disable-blink-features=AutomationControlled",
-            "--no-sandbox",
+            "--disable-gpu",                                         # Disable Hardware Acceleration (Crucial for 1-core VPS)
+            "--no-sandbox",                                          # Reduce OS sandbox overhead
             "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage",
+            "--disable-dev-shm-usage",                               # Prevent crashes on low RAM VPS
             "--disable-accelerated-2d-canvas",
+            "--disable-animations",                                  # Disable animations to save CPU
+            "--disable-web-security",                                # Reduce security calculation overhead
+            "--disable-features=IsolateOrigins,site-per-process,TranslateUI,BlinkGenPropertyTrees", # Save CPU threads
+            "--disable-background-networking",                       # Stop background networking
+            "--disable-background-timer-throttling",
+            "--disable-backgrounding-occluded-windows",
+            "--disable-breakpad",
+            "--disable-client-side-phishing-detection",
+            "--disable-component-update",
+            "--disable-default-apps",
+            "--disable-domain-reliability",
+            "--disable-extensions",
+            "--disable-hang-monitor",
+            "--disable-ipc-flooding-protection",
+            "--disable-popup-blocking",
+            "--disable-prompt-on-repost",
+            "--disable-renderer-backgrounding",
+            "--disable-sync",
+            "--metrics-recording-only",
+            "--mute-audio",
+            "--no-default-browser-check",
             "--no-first-run",
             "--no-zygote",
-            "--disable-gpu"
+            "--password-store=basic",
+            "--use-mock-keychain",
+            "--js-flags=--max-old-space-size=128"                    # Restrict V8 JS heap memory
         ]
 
         launch_kwargs = {
@@ -69,7 +93,7 @@ async def init_browser():
         # If system browser is found, use it; otherwise fallback to default playwright chromium
         if executable_path:
             launch_kwargs["executable_path"] = executable_path
-            print(f"LOG: [Playwright] Launching system browser: {executable_path}")
+            print(f"LOG: [Playwright] Launching optimized system browser: {executable_path}")
             try:
                 browser_instance = await playwright_instance.chromium.launch(**launch_kwargs)
             except Exception as e:
@@ -79,7 +103,7 @@ async def init_browser():
         else:
             browser_instance = await playwright_instance.chromium.launch(**launch_kwargs)
 
-        print("LOG: [Playwright] Global Chromium browser instance launched.")
+        print("LOG: [Playwright] Global Chromium browser instance launched (Low-CPU Mode).")
 
 async def close_browser():
     """Gracefully shuts down the global Playwright and Chromium browser instance."""
@@ -107,13 +131,28 @@ async def run_payment_worker(db_row_id: int, amount: str, currency: str, target_
         is_mobile=True
     )
     
-    # Abort images, media, and web fonts to drastically reduce RAM & network load
+    # Abort images, media, svg, and web fonts to drastically reduce RAM, CPU & network load
     await context.route(
-        "**/*.{png,jpg,jpeg,webp,gif,woff,woff2,ttf,eot,ico,mp4,mp3}",
+        "**/*.{png,jpg,jpeg,webp,gif,woff,woff2,ttf,eot,ico,mp4,mp3,svg}",
         lambda route: route.abort()
     )
 
     page = await context.new_page()
+
+    # Disable all CSS animations on page to prevent CPU spinning on 1-core VPS
+    await page.add_init_script("""
+        const disableAnimations = () => {
+            const style = document.createElement('style');
+            style.type = 'text/css';
+            style.innerHTML = '* { -webkit-animation: none !important; -moz-animation: none !important; -o-animation: none !important; -ms-animation: none !important; animation: none !important; -webkit-transition: none !important; -moz-transition: none !important; -o-transition: none !important; -ms-transition: none !important; transition: none !important; }';
+            document.head && document.head.appendChild(style);
+        };
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', disableAnimations);
+        } else {
+            disableAnimations();
+        }
+    """)
     state = {"status": "PENDING", "client_id": None, "tran_id": None}
 
     async def intercept_network_traffic(response):

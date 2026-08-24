@@ -520,7 +520,8 @@ After=network.target
 [Service]
 User=root
 WorkingDirectory=$APP_DIR
-Environment="PATH=$APP_DIR/venv/bin"
+Environment="PATH=$APP_DIR/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="PYTHONUNBUFFERED=1"
 ExecStart=$APP_DIR/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1
 Restart=always
 RestartSec=5
@@ -627,6 +628,86 @@ update_source_code() {
     print_deployment_info "Updated & Running"
 }
 
+# Database Configuration Assistant
+configure_database() {
+    check_root
+    ensure_project_files
+    while true; do
+        print_banner
+        echo -e "${PURPLE}${BOLD}--- 🗄️  Database Configuration Manager ---${NC}"
+        local current_db=$(grep "^DATABASE_URL=" "$APP_DIR/.env" 2>/dev/null | cut -d '=' -f2- || true)
+        if [ -z "$current_db" ]; then
+            current_db="SQLite (Default: aba_automation.db)"
+        fi
+        echo -e " Current Database: ${YELLOW}$current_db${NC}"
+        echo -e "${CYAN}------------------------------------------------------------------------------${NC}"
+        echo -e " ${GREEN}1)${NC} 📄 SQLite (Default local file: aba_automation.db)"
+        echo -e " ${GREEN}2)${NC} 🐘 PostgreSQL / Supabase / Neon (postgresql+asyncpg://...)"
+        echo -e " ${GREEN}3)${NC} 🐬 MySQL / MariaDB (mysql+aiomysql://...)"
+        echo -e " ${GREEN}4)${NC} ✏️  Custom Connection String"
+        echo -e " ${RED}0)${NC} 🔙 Back to Main Menu"
+        echo -e "${CYAN}------------------------------------------------------------------------------${NC}"
+        read -p "Select database type [0-4]: " db_choice
+
+        case $db_choice in
+            1)
+                set_env_var "DATABASE_URL" ""
+                touch "$APP_DIR/aba_automation.db"
+                chmod 666 "$APP_DIR/aba_automation.db"
+                echo -e "${GREEN}✅ Database set to default SQLite.${NC}"
+                ;;
+            2)
+                echo -e "\n${BLUE}🐘 Configure PostgreSQL Connection:${NC}"
+                echo -e " Format: ${CYAN}postgresql+asyncpg://user:password@host:port/dbname${NC}"
+                echo -e " Example: ${YELLOW}postgresql+asyncpg://postgres:pass@db.xxxx.supabase.co:5432/postgres${NC}"
+                read -p "Enter PostgreSQL DATABASE_URL: " pg_url
+                if [ -n "$pg_url" ]; then
+                    set_env_var "DATABASE_URL" "$pg_url"
+                    echo -e "${GREEN}✅ PostgreSQL configured in .env!${NC}"
+                fi
+                ;;
+            3)
+                echo -e "\n${BLUE}🐬 Configure MySQL Connection:${NC}"
+                echo -e " Format: ${CYAN}mysql+aiomysql://user:password@host:port/dbname${NC}"
+                echo -e " Example: ${YELLOW}mysql+aiomysql://user:pass@localhost:3306/aba_payway${NC}"
+                read -p "Enter MySQL DATABASE_URL: " mysql_url
+                if [ -n "$mysql_url" ]; then
+                    set_env_var "DATABASE_URL" "$mysql_url"
+                    echo -e "${GREEN}✅ MySQL configured in .env!${NC}"
+                fi
+                ;;
+            4)
+                read -p "Enter full SQLAlchemy async DATABASE_URL: " custom_url
+                if [ -n "$custom_url" ]; then
+                    set_env_var "DATABASE_URL" "$custom_url"
+                    echo -e "${GREEN}✅ DATABASE_URL updated!${NC}"
+                fi
+                ;;
+            0)
+                break
+                ;;
+            *)
+                echo -e "${RED}❌ Invalid option.${NC}"
+                sleep 1
+                continue
+                ;;
+        esac
+
+        read -p "Restart service now to connect to new database? [Y/n]: " restart_now
+        restart_now=${restart_now:-Y}
+        if [[ "$restart_now" =~ ^[Yy]$ ]]; then
+            if command -v docker &>/dev/null && [ "$(docker compose ps -q payway-api 2>/dev/null)" ]; then
+                docker compose restart
+            elif systemctl is-active --quiet aba-payway 2>/dev/null; then
+                systemctl restart aba-payway
+            fi
+            echo -e "${GREEN}✅ Service restarted with new database connection!${NC}"
+        fi
+        read -p "Press Enter to continue..."
+        break
+    done
+}
+
 # Main Interactive Menu
 main_menu() {
     ensure_project_files
@@ -636,17 +717,18 @@ main_menu() {
         echo -e " ${GREEN}1)${NC} 🐳 ${BOLD}Host with Docker & Docker Compose${NC} (Containers + Playwright)"
         echo -e " ${GREEN}2)${NC} 🖥️  ${BOLD}Host Real on VPS (Native Host)${NC} (Python venv + Systemd)"
         echo -e ""
-        echo -e " ${PURPLE}${BOLD}=== ⚙️ MANAGEMENT & TOOLS ===${NC}"
+        echo -e " ${PURPLE}${BOLD}=== ⚙️ CONFIGURATION & TOOLS ===${NC}"
         echo -e " ${GREEN}3)${NC} 🐙 Git Login & Token Setup (Input PAT Token on Terminal)"
-        echo -e " ${GREEN}4)${NC} 🔒 Setup Domain + Nginx + Free SSL (HTTPS)"
-        echo -e " ${GREEN}5)${NC} 🔄 Restart Service (Auto-detects Docker or Systemd)"
-        echo -e " ${GREEN}6)${NC} ⏹️  Stop Service (Auto-detects Docker or Systemd)"
-        echo -e " ${GREEN}7)${NC} 📜 View Live Logs (Auto-detects Docker or Systemd)"
-        echo -e " ${GREEN}8)${NC} 📥 Update Code & Rebuild (Git Pull + Auto-reload)"
-        echo -e " ${GREEN}9)${NC} 🩺 Check Health & Status (System, Ports, API)"
+        echo -e " ${GREEN}4)${NC} 🗄️  Change Database (SQLite / PostgreSQL / MySQL)"
+        echo -e " ${GREEN}5)${NC} 🔒 Setup Domain + Nginx + Free SSL (HTTPS)"
+        echo -e " ${GREEN}6)${NC} 🔄 Restart Service (Auto-detects Docker or Systemd)"
+        echo -e " ${GREEN}7)${NC} ⏹️  Stop Service (Auto-detects Docker or Systemd)"
+        echo -e " ${GREEN}8)${NC} 📜 View Live Logs (Auto-detects Docker or Systemd)"
+        echo -e " ${GREEN}9)${NC} 📥 Update Code & Rebuild (Git Pull + Auto-reload)"
+        echo -e " ${GREEN}10)${NC} 🩺 Check Health & Status (System, Ports, API)"
         echo -e " ${RED}0)${NC} 🚪 Exit"
         echo -e "${CYAN}------------------------------------------------------------------------------${NC}"
-        read -p "Select an option [0-9]: " choice
+        read -p "Select an option [0-10]: " choice
 
         case $choice in
             1)
@@ -662,11 +744,14 @@ main_menu() {
                 setup_git_auth
                 ;;
             4)
+                configure_database
+                ;;
+            5)
                 check_root
                 setup_nginx_ssl
                 read -p "Press Enter to return to menu..."
                 ;;
-            5)
+            6)
                 check_root
                 cd "$APP_DIR"
                 if command -v docker &>/dev/null && [ "$(docker compose ps -q payway-api 2>/dev/null)" ]; then
@@ -682,7 +767,7 @@ main_menu() {
                 fi
                 read -p "Press Enter to return to menu..."
                 ;;
-            6)
+            7)
                 check_root
                 cd "$APP_DIR"
                 if command -v docker &>/dev/null; then
@@ -694,7 +779,7 @@ main_menu() {
                 echo -e "${YELLOW}⏹️ All services stopped.${NC}"
                 read -p "Press Enter to return to menu..."
                 ;;
-            7)
+            8)
                 cd "$APP_DIR"
                 if command -v docker &>/dev/null && [ "$(docker compose ps -q payway-api 2>/dev/null)" ]; then
                     echo -e "${BLUE}Viewing Docker logs (Press Ctrl+C to exit)...${NC}"
@@ -707,11 +792,11 @@ main_menu() {
                 fi
                 read -p "Press Enter to return to menu..."
                 ;;
-            8)
+            9)
                 update_source_code
                 read -p "Press Enter to return to menu..."
                 ;;
-            9)
+            10)
                 echo -e "\n${BLUE}🩺 System Health & Status Check:${NC}"
                 echo -e "${CYAN}--- Installed Packages ---${NC}"
                 command -v git &>/dev/null && echo -e " Git:    ${GREEN}$(git --version)${NC}" || echo -e " Git:    ${RED}Not installed${NC}"
@@ -747,7 +832,7 @@ main_menu() {
                 exit 0
                 ;;
             *)
-                echo -e "${RED}❌ Invalid option. Please select 0-9.${NC}"
+                echo -e "${RED}❌ Invalid option. Please select 0-10.${NC}"
                 sleep 1
                 ;;
         esac
@@ -765,6 +850,9 @@ elif [ "$1" = "--native" ] || [ "$1" = "--vps" ] || [ "$1" = "-n" ]; then
     exit 0
 elif [ "$1" = "--update" ] || [ "$1" = "-u" ] || [ "$1" = "--pull" ]; then
     update_source_code
+    exit 0
+elif [ "$1" = "--db" ] || [ "$1" = "--database" ]; then
+    configure_database
     exit 0
 elif [ "$1" = "--token" ] || [ "$1" = "-t" ]; then
     check_root
