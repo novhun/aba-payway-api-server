@@ -343,6 +343,29 @@ Embeddable QR checkout page for customers. Does not require an API key.
 
 ---
 
+## 🚀 VPS Hosting (All-In-One Script)
+
+To deploy this project to any Linux VPS (Ubuntu / Debian):
+
+```bash
+# 1. Clone repository to your server
+git clone https://github.com/novhun/aba-payway-api-server.git /opt/aba-payway
+cd /opt/aba-payway
+
+# 2. Run the all-in-one VPS Manager
+sudo bash host.sh
+```
+
+**Features of `host.sh`**:
+- 🧠 Auto-detects & configures 2GB Swap (prevents Playwright Chromium OOM)
+- 🐳 Installs Docker & Docker Compose automatically
+- ⚙️ Interactive `.env` & credentials setup
+- 🛡️ Auto-configures UFW firewall
+- 🌐 Setup custom domain, Nginx reverse proxy & free Let's Encrypt SSL (HTTPS)
+- 📜 View live logs, restart, update & check health from a simple interactive menu
+
+---
+
 ## 📄 License
 
 This project is open-source and available under the **MIT License**.
