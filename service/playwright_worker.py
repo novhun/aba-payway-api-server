@@ -107,13 +107,13 @@ async def close_browser():
         playwright_instance = None
     print("LOG: [Playwright] Global Chromium browser instance closed.")
 
-async def run_payment_worker(db_row_id: int, amount: str, currency: str, target_link: str):
+async def run_payment_worker(db_row_id: int, amount: str, currency: str, target_link: str, code_merchant: str = None):
     global browser_instance, active_tasks_count
     if browser_instance is None:
         await init_browser()
 
     active_tasks_count += 1
-    print(f"\nLOG: [Task-{db_row_id}] Spawning isolated context for {amount} {currency.upper()} (Active Tasks: {active_tasks_count})")
+    print(f"\nLOG: [Task-{db_row_id}] Spawning isolated context for {amount} {currency.upper()} (Merchant: {code_merchant or 'default'}) (Active Tasks: {active_tasks_count})")
     
     # Create isolated context (equivalent to an incognito tab)
     context = await browser_instance.new_context(
@@ -144,7 +144,7 @@ async def run_payment_worker(db_row_id: int, amount: str, currency: str, target_
             disableAnimations();
         }
     """)
-    state = {"status": "PENDING", "client_id": None, "tran_id": None}
+    state = {"status": "PENDING", "client_id": None, "tran_id": None, "code_merchant": code_merchant}
 
     async def intercept_network_traffic(response):
         url = response.url
@@ -178,6 +178,17 @@ async def run_payment_worker(db_row_id: int, amount: str, currency: str, target_
                             )
                         )
                         await db.commit()
+
+                    # Trigger instant Telegram notification (routes to merchant's custom group or global)
+                    from service.telegram_service import send_payment_success_alert
+                    asyncio.create_task(send_payment_success_alert({
+                        "id": db_row_id,
+                        "amount": amount,
+                        "currency": currency,
+                        "tran_id": state.get("tran_id", "N/A"),
+                        "merchant_name": state.get("merchant_name", ""),
+                        "code_merchant": code_merchant
+                    }))
             except Exception:
                 pass
 

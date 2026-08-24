@@ -81,6 +81,7 @@ class MerchantCreateRequest(BaseModel):
     merchant_logo_url: str = ""
     payment_link_khr: str
     payment_link_usd: str
+    telegram_chat_id: Optional[str] = ""
     status: str = "ACTIVE"
 
 class MerchantUpdateRequest(BaseModel):
@@ -89,6 +90,7 @@ class MerchantUpdateRequest(BaseModel):
     merchant_logo_url: str = ""
     payment_link_khr: str
     payment_link_usd: str
+    telegram_chat_id: Optional[str] = ""
     status: str
 
 class BanIpRequest(BaseModel):
@@ -96,7 +98,25 @@ class BanIpRequest(BaseModel):
     reason: str = ""
 
 class SettingsUpdateRequest(BaseModel):
-    cors_origins: str
+    cors_origins: Optional[str] = "*"
+    telegram_bot_token: Optional[str] = ""
+    telegram_chat_id: Optional[str] = ""
+    telegram_enabled: Optional[bool] = False
+    telegram_notify_success: Optional[bool] = True
+    telegram_notify_create: Optional[bool] = False
+
+class TelegramGetChatsRequest(BaseModel):
+    bot_token: str
+
+class TelegramTestRequest(BaseModel):
+    bot_token: str
+    chat_id: str
+
+from service.telegram_service import (
+    fetch_telegram_recent_chats,
+    send_test_telegram_message,
+    get_telegram_bot_info
+)
 
 router = APIRouter()
 security = HTTPBasic()
@@ -482,30 +502,71 @@ async def ban_ip(payload: BanIpRequest, admin: str = Depends(get_current_admin))
 @router.get("/api/v1/admin/settings")
 async def get_settings(admin: str = Depends(get_current_admin)):
     async with async_session() as db:
-        res = await db.execute(select(Setting).where(Setting.key == 'cors_origins'))
-        setting = res.scalar_one_or_none()
+        res = await db.execute(select(Setting))
+        settings_rows = res.scalars().all()
+        settings_map = {s.key: s.value for s in settings_rows}
         
         db_size = 0
         if os.path.exists("aba_automation.db"):
             db_size = os.path.getsize("aba_automation.db")
             
         return {
-            "cors_origins": setting.value if setting else "*",
+            "cors_origins": settings_map.get("cors_origins", "*"),
+            "telegram_bot_token": settings_map.get("telegram_bot_token", ""),
+            "telegram_chat_id": settings_map.get("telegram_chat_id", ""),
+            "telegram_enabled": settings_map.get("telegram_enabled", "false").lower() == "true",
+            "telegram_notify_success": settings_map.get("telegram_notify_success", "true").lower() == "true",
+            "telegram_notify_create": settings_map.get("telegram_notify_create", "false").lower() == "true",
             "db_size_bytes": db_size
         }
 
 @router.put("/api/v1/admin/settings")
 async def update_settings(payload: SettingsUpdateRequest, admin: str = Depends(get_current_admin)):
     async with async_session() as db:
-        res = await db.execute(select(Setting).where(Setting.key == 'cors_origins'))
-        setting = res.scalar_one_or_none()
-        if setting:
-            setting.value = payload.cors_origins
-        else:
-            setting = Setting(key='cors_origins', value=payload.cors_origins)
-            db.add(setting)
+        settings_dict = {
+            "cors_origins": payload.cors_origins or "*",
+            "telegram_bot_token": payload.telegram_bot_token or "",
+            "telegram_chat_id": payload.telegram_chat_id or "",
+            "telegram_enabled": "true" if payload.telegram_enabled else "false",
+            "telegram_notify_success": "true" if payload.telegram_notify_success else "false",
+            "telegram_notify_create": "true" if payload.telegram_notify_create else "false",
+        }
+
+        for key, value in settings_dict.items():
+            res = await db.execute(select(Setting).where(Setting.key == key))
+            setting = res.scalar_one_or_none()
+            if setting:
+                setting.value = value
+            else:
+                db.add(Setting(key=key, value=value))
+
         await db.commit()
-    return {"message": "Settings updated"}
+    return {"message": "Settings updated successfully"}
+
+@router.post("/api/v1/admin/telegram/get-chats")
+async def get_telegram_chats(payload: TelegramGetChatsRequest, admin: str = Depends(get_current_admin)):
+    """Auto-detects recent chats and groups from Telegram bot."""
+    result = await fetch_telegram_recent_chats(payload.bot_token.strip())
+    if not result.get("ok"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Failed to fetch chats from Telegram"))
+    return result
+
+@router.post("/api/v1/admin/telegram/test")
+async def test_telegram_alert(payload: TelegramTestRequest, admin: str = Depends(get_current_admin)):
+    """Sends a live test message to verify Telegram bot and chat integration."""
+    result = await send_test_telegram_message(payload.bot_token.strip(), payload.chat_id.strip())
+    if not result.get("ok"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Failed to send test message"))
+    return {"ok": True, "message": "Test notification sent successfully to Telegram!"}
+
+@router.post("/api/v1/admin/telegram/sync")
+async def sync_telegram_merchants(payload: TelegramGetChatsRequest, admin: str = Depends(get_current_admin)):
+    """Scans and synchronizes Telegram group invites / start commands with merchants."""
+    from service.telegram_service import process_telegram_auto_connect
+    result = await process_telegram_auto_connect(payload.bot_token.strip())
+    if not result.get("ok"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Failed to sync updates"))
+    return result
 
 @router.post("/api/v1/admin/merchants")
 async def create_merchant(payload: MerchantCreateRequest, admin: str = Depends(get_current_admin)):
@@ -517,6 +578,7 @@ async def create_merchant(payload: MerchantCreateRequest, admin: str = Depends(g
             merchant_logo_url=payload.merchant_logo_url,
             payment_link_khr=payload.payment_link_khr,
             payment_link_usd=payload.payment_link_usd,
+            telegram_chat_id=payload.telegram_chat_id or "",
             status=payload.status
         )
         db.add(new_merchant)
@@ -536,6 +598,7 @@ async def update_merchant(code_merchant: str, payload: MerchantUpdateRequest, ad
         merchant.merchant_logo_url = payload.merchant_logo_url
         merchant.payment_link_khr = payload.payment_link_khr
         merchant.payment_link_usd = payload.payment_link_usd
+        merchant.telegram_chat_id = payload.telegram_chat_id or ""
         merchant.status = payload.status
         await db.commit()
     return {"message": "Merchant updated successfully"}

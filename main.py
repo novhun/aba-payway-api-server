@@ -75,9 +75,19 @@ class APILoggingMiddleware(BaseHTTPMiddleware):
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Migrate merchant table to add telegram_chat_id column if not exists
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE merchant ADD COLUMN telegram_chat_id VARCHAR DEFAULT ''"))
+        except Exception:
+            pass
     print("LOG: [Database] Storage tables verified clean.")
     await init_browser()
+    from service.telegram_service import start_telegram_poller
+    poller_task = asyncio.create_task(start_telegram_poller())
     yield
+    if poller_task:
+        poller_task.cancel()
     await close_browser()
 
 cors_origins = ["*"]

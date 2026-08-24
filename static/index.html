@@ -197,10 +197,10 @@
 
   <script type="text/babel">
     const { useState, useEffect, useCallback } = React;
-    const { Layout, Menu, Table, Card, Row, Col, Select, Typography, ConfigProvider, Space, Tag, Button, Modal, Form, Input, message, DatePicker, Statistic, Switch, Tabs, Progress, Badge, Tooltip, Divider } = antd;
+    const { Layout, Menu, Table, Card, Row, Col, Select, Typography, ConfigProvider, Space, Tag, Button, Modal, Form, Input, message, DatePicker, Statistic, Switch, Tabs, Progress, Badge, Tooltip, Divider, Radio, List, Checkbox, Alert, Dropdown } = antd;
     const { Header, Content, Footer, Sider } = Layout;
     const { Title, Text, Paragraph } = Typography;
-    const { GlobalOutlined, CheckCircleOutlined, SyncOutlined, CloseCircleOutlined, ClockCircleOutlined, DatabaseOutlined, ShopOutlined, PlusOutlined, UserOutlined, LockOutlined, LoginOutlined, LogoutOutlined, SettingOutlined, LineChartOutlined, EyeOutlined, EyeInvisibleOutlined, AppstoreOutlined, QrcodeOutlined, DownloadOutlined, ApiOutlined, HddOutlined, DashboardOutlined, ThunderboltOutlined, CloudServerOutlined, CodeOutlined, LoadingOutlined, PlayCircleOutlined, LinkOutlined, ReloadOutlined } = icons;
+    const { GlobalOutlined, CheckCircleOutlined, SyncOutlined, CloseCircleOutlined, ClockCircleOutlined, DatabaseOutlined, ShopOutlined, PlusOutlined, UserOutlined, LockOutlined, LoginOutlined, LogoutOutlined, SettingOutlined, LineChartOutlined, EyeOutlined, EyeInvisibleOutlined, AppstoreOutlined, QrcodeOutlined, DownloadOutlined, ApiOutlined, HddOutlined, DashboardOutlined, ThunderboltOutlined, CloudServerOutlined, CodeOutlined, LoadingOutlined, PlayCircleOutlined, LinkOutlined, ReloadOutlined, SearchOutlined, SendOutlined } = icons;
 
     function App() {
       const [token, setToken] = useState(localStorage.getItem('adminToken'));
@@ -582,7 +582,20 @@
         }
       }, [token, currentView, fetchLedger]); 
 
-      const [settings, setSettings] = useState({ cors_origins: '*' });
+      const [settings, setSettings] = useState({ 
+        cors_origins: '*',
+        telegram_bot_token: '',
+        telegram_chat_id: '',
+        telegram_enabled: false,
+        telegram_notify_success: true,
+        telegram_notify_create: false,
+        db_size_bytes: 0
+      });
+      const [telegramChatMode, setTelegramChatMode] = useState('auto');
+      const [detectedChats, setDetectedChats] = useState([]);
+      const [botProfile, setBotProfile] = useState(null);
+      const [fetchingChats, setFetchingChats] = useState(false);
+      const [testingTelegram, setTestingTelegram] = useState(false);
 
       const fetchSettings = useCallback(() => {
         if (!token) return;
@@ -590,8 +603,26 @@
           headers: { 'Authorization': `Basic ${token}` }
         })
         .then(res => res.json())
-        .then(data => setSettings(data));
-      }, [token]);
+        .then(data => {
+          setSettings(data);
+          if (data.telegram_bot_token && detectedChats.length === 0) {
+            // Auto fetch bot profile if token exists
+            fetch('/api/v1/admin/telegram/get-chats', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Basic ${token}` },
+              body: JSON.stringify({ bot_token: data.telegram_bot_token })
+            })
+            .then(res => res.json())
+            .then(resData => {
+              if (resData.ok) {
+                setBotProfile(resData.bot);
+                setDetectedChats(resData.chats || []);
+              }
+            })
+            .catch(() => {});
+          }
+        });
+      }, [token, detectedChats.length]);
 
       useEffect(() => {
         if (token && currentView === 'settings') {
@@ -607,8 +638,106 @@
         })
         .then(res => res.json())
         .then(() => {
-          message.success(t.settings_saved || 'Settings saved successfully. Please restart server to apply CORS changes.');
+          message.success(t.settings_saved || 'Settings saved successfully!');
         });
+      };
+
+      const handleFetchTelegramChats = () => {
+        if (!settings.telegram_bot_token) {
+          message.warning(t.telegram_bot_hint || 'Please enter your Telegram Bot Token first.');
+          return;
+        }
+        setFetchingChats(true);
+        fetch('/api/v1/admin/telegram/get-chats', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Basic ${token}` },
+          body: JSON.stringify({ bot_token: settings.telegram_bot_token })
+        })
+        .then(async res => {
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || data.error || 'Failed to query Telegram');
+          return data;
+        })
+        .then(data => {
+          setBotProfile(data.bot);
+          setDetectedChats(data.chats || []);
+          if (data.chats && data.chats.length > 0) {
+            message.success(`Found ${data.chats.length} chat(s) connected to @${data.bot?.username || 'bot'}`);
+          } else {
+            message.info(t.telegram_no_chats_found || 'No chats detected yet.');
+          }
+        })
+        .catch(err => {
+          message.error(err.message);
+        })
+        .finally(() => setFetchingChats(false));
+      };
+
+      const handleTestTelegram = () => {
+        if (!settings.telegram_bot_token || !settings.telegram_chat_id) {
+          message.warning('Please enter both Bot Token and Chat ID before testing.');
+          return;
+        }
+        setTestingTelegram(true);
+        fetch('/api/v1/admin/telegram/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Basic ${token}` },
+          body: JSON.stringify({ bot_token: settings.telegram_bot_token, chat_id: settings.telegram_chat_id })
+        })
+        .then(async res => {
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || data.error || 'Failed to send test message');
+          return data;
+        })
+        .then(() => {
+          message.success(t.telegram_test_success || 'Test notification delivered successfully to Telegram!');
+        })
+        .catch(err => {
+          message.error(err.message);
+        })
+        .finally(() => setTestingTelegram(false));
+      };
+
+      const handleInviteMerchantToTelegram = (merchant) => {
+        const username = botProfile?.username;
+        if (!username) {
+          message.warning('Please click "Fetch & Detect Chats" in Settings first to load your Bot profile.');
+          return;
+        }
+        const inviteUrl = `https://t.me/${username}?startgroup=${merchant.code_merchant}`;
+        window.open(inviteUrl, '_blank');
+        
+        message.loading({
+          content: `Opening Telegram to add bot for '${merchant.name}'. System is listening to auto-connect...`,
+          duration: 15
+        });
+
+        // Polling sync to detect newly linked chat
+        let count = 0;
+        const interval = setInterval(() => {
+          count++;
+          if (count > 8) {
+            clearInterval(interval);
+            return;
+          }
+          fetch('/api/v1/admin/telegram/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Basic ${token}` },
+            body: JSON.stringify({ bot_token: settings.telegram_bot_token })
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.connected && data.connected.length > 0) {
+              const matched = data.connected.find(c => c.code_merchant === merchant.code_merchant);
+              if (matched) {
+                message.success(`🎉 Auto-Connected '${merchant.name}' to ${matched.chat_title} (${matched.chat_id})!`);
+                clearInterval(interval);
+                fetchData();
+              }
+            }
+          })
+          .catch(() => {});
+        }, 3000);
       };
 
       const formatBytes = (bytes, decimals = 2) => {
@@ -839,10 +968,42 @@
             </Space>
           )
         },
-        { title: t.status || 'Status', dataIndex: 'status', key: 'status', render: status => <Tag color={status === 'ACTIVE' ? 'blue' : 'default'}>{status}</Tag> },
+        {
+          title: t.merchant_telegram_chat || 'Telegram Alert', 
+          key: 'telegram_chat_id', 
+          dataIndex: 'telegram_chat_id', 
+          render: text => {
+            if (!text || !text.trim()) return <Tag color="default">⚙️ Global Settings</Tag>;
+            const ids = text.split(',').map(s => s.trim()).filter(Boolean);
+            return (
+              <Space wrap size={[0, 4]}>
+                {ids.map(id => (
+                  <Tag color="geekblue" key={id} style={{ fontFamily: 'monospace' }}>
+                    👥 {id}
+                  </Tag>
+                ))}
+              </Space>
+            );
+          }
+        },
         {
           title: t.actions || 'Actions', key: 'actions', render: (_, record) => (
-            <Button type="link" onClick={() => openMerchantModal(record)}>{t.edit || 'Edit'}</Button>
+            <Space>
+              <Button type="link" onClick={() => openMerchantModal(record)}>{t.edit || 'Edit'}</Button>
+              {botProfile && botProfile.username && (
+                <Tooltip title={t.invite_bot_to_merchant_group || "1-Click Invite Bot to Group & Auto-Connect this Merchant"}>
+                  <Button 
+                    type="link" 
+                    size="small"
+                    style={{ color: '#52c41a' }}
+                    icon={<LinkOutlined />}
+                    onClick={() => handleInviteMerchantToTelegram(record)}
+                  >
+                    {t.auto_connect_btn || '🔗 Auto-Connect Group'}
+                  </Button>
+                </Tooltip>
+              )}
+            </Space>
           )
         }
       ];
@@ -1853,6 +2014,245 @@ echo $result;
                       <Statistic title={t.db_storage_size || 'Database Storage Size'} value={formatBytes(settings.db_size_bytes)} />
                     </Card>
 
+                    {/* Telegram Bot Notification Settings Card */}
+                    <Card 
+                      title={
+                        <Space>
+                          <span style={{ fontSize: '20px' }}>🤖</span>
+                          <span>{t.telegram_alert_title || 'Telegram Notification Alerts'}</span>
+                          {settings.telegram_enabled && (
+                            <Tag color="success">ACTIVE / បើកដំណើរការ</Tag>
+                          )}
+                        </Space>
+                      } 
+                      bordered={false} 
+                      style={{ boxShadow: '0 1px 2px -2px rgba(0, 0, 0, 0.16)' }}
+                      extra={
+                        <Space>
+                          <span style={{ fontSize: '13px', color: '#666' }}>{t.telegram_enabled_label || 'Enable Telegram Alerts'}:</span>
+                          <Switch 
+                            checked={!!settings.telegram_enabled} 
+                            onChange={(checked) => setSettings({...settings, telegram_enabled: checked})} 
+                            checkedChildren="ON"
+                            unCheckedChildren="OFF"
+                          />
+                        </Space>
+                      }
+                    >
+                      <Form layout="vertical">
+                        <Form.Item 
+                          label={<b>{t.telegram_bot_token || 'Telegram Bot Token'}</b>}
+                          extra={
+                            <div style={{ marginTop: 4, color: '#666', fontSize: '12px' }}>
+                              💡 {t.telegram_bot_hint || 'Create a bot via @BotFather on Telegram, paste your token, then add the bot to your group or chat.'}
+                            </div>
+                          }
+                        >
+                          <Input.Password 
+                            value={settings.telegram_bot_token} 
+                            onChange={(e) => setSettings({...settings, telegram_bot_token: e.target.value})}
+                            placeholder={t.telegram_bot_token_placeholder || "123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"}
+                            style={{ fontFamily: 'monospace' }}
+                            addonAfter={
+                              <Button 
+                                type="primary" 
+                                size="small" 
+                                loading={fetchingChats}
+                                onClick={handleFetchTelegramChats}
+                                icon={<SearchOutlined />}
+                                style={{ borderRadius: '0 6px 6px 0' }}
+                              >
+                                {t.telegram_verify_bot || 'Fetch & Detect Chats'}
+                              </Button>
+                            }
+                          />
+                        </Form.Item>
+
+                        {botProfile && (
+                          <div style={{ marginBottom: 16 }}>
+                            <Alert 
+                              type="success" 
+                              showIcon 
+                              style={{ marginBottom: 12 }}
+                              message={
+                                <Space wrap>
+                                  <span>🤖 <b>Bot Profile:</b> {botProfile.first_name} (<code>@{botProfile.username}</code>)</span>
+                                  <Tag color="blue">Bot ID: {botProfile.id}</Tag>
+                                  <Tag color="green">Ready</Tag>
+                                </Space>
+                              }
+                            />
+                            
+                            {/* 1-Click Direct Action Buttons */}
+                            <Card size="small" style={{ background: '#f6ffed', border: '1px solid #b7eb8f', marginBottom: 16 }}>
+                              <div style={{ fontWeight: 600, color: '#389e0d', marginBottom: 8 }}>
+                                🚀 {t.telegram_quick_connect || '1-Click Telegram Actions'}:
+                              </div>
+                              <Space wrap>
+                                <Button 
+                                  type="primary" 
+                                  icon={<LinkOutlined />}
+                                  style={{ background: '#52c41a', borderColor: '#52c41a' }}
+                                  onClick={() => {
+                                    window.open(`https://t.me/${botProfile.username}?startgroup=true`, '_blank');
+                                    message.info('Select your Group in Telegram, add the bot, then click "Fetch & Detect Chats" below!');
+                                  }}
+                                >
+                                  {t.telegram_add_to_group || '➕ Add Bot to Telegram Group'}
+                                </Button>
+                                <Button 
+                                  type="default" 
+                                  icon={<UserOutlined />}
+                                  onClick={() => {
+                                    window.open(`https://t.me/${botProfile.username}?start=connect`, '_blank');
+                                    message.info('Click Start in Telegram, then click "Fetch & Detect Chats" below!');
+                                  }}
+                                >
+                                  {t.telegram_open_dm || '💬 Open Direct Chat with Bot'}
+                                </Button>
+                              </Space>
+                            </Card>
+                          </div>
+                        )}
+
+                        <Form.Item label={<b>{t.telegram_connect_mode || 'Chat Connection Method'}</b>}>
+                          <Radio.Group 
+                            value={telegramChatMode} 
+                            onChange={(e) => setTelegramChatMode(e.target.value)}
+                            optionType="button"
+                            buttonStyle="solid"
+                          >
+                            <Radio.Button value="auto">⚡ {t.telegram_auto_mode || 'Auto-Detect Recent Chats'}</Radio.Button>
+                            <Radio.Button value="manual">✏️ {t.telegram_manual_mode || 'Manual Chat ID'}</Radio.Button>
+                          </Radio.Group>
+                        </Form.Item>
+
+                        {telegramChatMode === 'auto' ? (
+                          <div style={{ marginBottom: 16, background: '#fafafa', padding: '16px', borderRadius: '8px', border: '1px solid #f0f0f0' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                              <span style={{ fontWeight: 600 }}>{t.telegram_detected_chats || 'Detected Chats & Groups'}:</span>
+                              <Button size="small" onClick={handleFetchTelegramChats} loading={fetchingChats} icon={<ReloadOutlined />}>
+                                {t.refresh || 'Refresh'}
+                              </Button>
+                            </div>
+
+                            {detectedChats.length > 0 ? (
+                              <List
+                                size="small"
+                                bordered
+                                dataSource={detectedChats}
+                                renderItem={item => (
+                                  <List.Item
+                                    style={{ 
+                                      background: settings.telegram_chat_id === item.chat_id ? '#e6f7ff' : '#fff',
+                                      transition: 'background 0.3s'
+                                    }}
+                                    actions={[
+                                      settings.telegram_chat_id === item.chat_id ? (
+                                        <Tag color="success" icon={<CheckCircleOutlined />}>{t.telegram_connected_chat || 'Connected'}</Tag>
+                                      ) : (
+                                        <Button 
+                                          type="primary" 
+                                          size="small" 
+                                          ghost
+                                          onClick={() => {
+                                            setSettings({...settings, telegram_chat_id: item.chat_id});
+                                            message.success(`Selected Chat: ${item.title} (${item.chat_id})`);
+                                          }}
+                                        >
+                                          {t.telegram_select_chat || 'Connect'}
+                                        </Button>
+                                      )
+                                    ]}
+                                  >
+                                    <List.Item.Meta
+                                      avatar={
+                                        <span style={{ fontSize: '20px' }}>
+                                          {item.type === 'supergroup' || item.type === 'group' ? '👥' : item.type === 'channel' ? '📢' : '👤'}
+                                        </span>
+                                      }
+                                      title={
+                                        <Space>
+                                          <span>{item.title}</span>
+                                          <Tag color={item.type === 'supergroup' || item.type === 'group' ? 'geekblue' : 'purple'}>
+                                            {item.type.toUpperCase()}
+                                          </Tag>
+                                        </Space>
+                                      }
+                                      description={<span style={{ fontFamily: 'monospace', color: '#888' }}>Chat ID: {item.chat_id}</span>}
+                                    />
+                                  </List.Item>
+                                )}
+                              />
+                            ) : (
+                              <div style={{ textAlign: 'center', padding: '16px', color: '#888' }}>
+                                <p>💬 {t.telegram_no_chats_found || 'No chats detected. Add your bot to a group or send /start to it, then click Fetch.'}</p>
+                                <Button type="dashed" onClick={handleFetchTelegramChats} loading={fetchingChats}>
+                                  🔍 {t.telegram_verify_bot || 'Fetch & Detect Chats'}
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <Form.Item 
+                            label={<b>{t.telegram_chat_id || 'Telegram Chat / Group ID'}</b>}
+                            extra="For groups, chat ID usually starts with -100 (e.g. -1001234567890). For personal chat, enter your User ID."
+                          >
+                            <Input 
+                              value={settings.telegram_chat_id}
+                              onChange={(e) => setSettings({...settings, telegram_chat_id: e.target.value})}
+                              placeholder={t.telegram_chat_id_placeholder || "-1001234567890 or 123456789"}
+                              style={{ fontFamily: 'monospace' }}
+                            />
+                          </Form.Item>
+                        )}
+
+                        {settings.telegram_chat_id && (
+                          <div style={{ marginBottom: 16 }}>
+                            <Tag color="cyan" style={{ fontSize: '13px', padding: '4px 10px' }}>
+                              🎯 Target Chat ID: <b>{settings.telegram_chat_id}</b>
+                            </Tag>
+                          </div>
+                        )}
+
+                        <Divider style={{ margin: '16px 0' }} />
+
+                        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+                          <Col xs={24} sm={12}>
+                            <Checkbox 
+                              checked={!!settings.telegram_notify_success} 
+                              onChange={(e) => setSettings({...settings, telegram_notify_success: e.target.checked})}
+                            >
+                              ✅ {t.telegram_notify_success_label || 'Notify on Payment Verified (ជោគជ័យ)'}
+                            </Checkbox>
+                          </Col>
+                          <Col xs={24} sm={12}>
+                            <Checkbox 
+                              checked={!!settings.telegram_notify_create} 
+                              onChange={(e) => setSettings({...settings, telegram_notify_create: e.target.checked})}
+                            >
+                              🧾 {t.telegram_notify_create_label || 'Notify on Invoice Created (បង្កើតថ្មី)'}
+                            </Checkbox>
+                          </Col>
+                        </Row>
+
+                        <Space wrap>
+                          <Button type="primary" onClick={handleSaveSettings}>
+                            💾 {t.save_settings || 'Save Settings'}
+                          </Button>
+                          <Button 
+                            type="default" 
+                            onClick={handleTestTelegram} 
+                            loading={testingTelegram}
+                            disabled={!settings.telegram_bot_token || !settings.telegram_chat_id}
+                            icon={<SendOutlined />}
+                          >
+                            {t.telegram_test_btn || 'Send Test Message'}
+                          </Button>
+                        </Space>
+                      </Form>
+                    </Card>
+
                     <Card 
                       title={t.cors_config || 'CORS Configuration'} 
                       bordered={false} 
@@ -2121,6 +2521,58 @@ echo $result;
               </Form.Item>
               <Form.Item label={t.usd_link || "USD Link"} name="payment_link_usd" rules={[{ required: true }]}>
                 <Input placeholder="https://link.payway.com.kh/..." />
+              </Form.Item>
+              <Form.Item 
+                label={
+                  <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                    <span>🤖 {t.merchant_telegram_chat || "Telegram Chat / Group ID (Optional)"}</span>
+                    <Space size="small">
+                      {botProfile?.username && (
+                        <Button 
+                          type="primary" 
+                          size="small" 
+                          icon={<LinkOutlined />}
+                          style={{ background: '#52c41a', borderColor: '#52c41a' }}
+                          onClick={() => {
+                            const code = form.getFieldValue('code_merchant') || editingMerchant?.code_merchant;
+                            const name = form.getFieldValue('name') || editingMerchant?.name || code;
+                            if (!code) {
+                              message.warning('Please enter Merchant Code first.');
+                              return;
+                            }
+                            handleInviteMerchantToTelegram({ code_merchant: code, name: name });
+                          }}
+                        >
+                          {t.invite_bot_modal_btn || "➕ 1-Click Invite & Connect"}
+                        </Button>
+                      )}
+                      {detectedChats.length > 0 && (
+                        <Dropdown 
+                          menu={{
+                            items: detectedChats.map(c => ({
+                              key: c.chat_id,
+                              label: `${c.type === 'group' || c.type === 'supergroup' ? '👥' : '👤'} ${c.title} (${c.chat_id})`,
+                              onClick: () => {
+                                const curr = form.getFieldValue('telegram_chat_id') || '';
+                                const updated = curr ? `${curr}, ${c.chat_id}` : c.chat_id;
+                                form.setFieldsValue({ telegram_chat_id: updated });
+                              }
+                            }))
+                          }}
+                          trigger={['click']}
+                        >
+                          <Button type="default" size="small" icon={<PlusOutlined />}>
+                            {t.insert_detected_chat || "Insert Detected Chat"}
+                          </Button>
+                        </Dropdown>
+                      )}
+                    </Space>
+                  </div>
+                } 
+                name="telegram_chat_id"
+                extra="Leave empty to use Global Telegram Group from Settings. You can click '1-Click Invite & Connect' to invite the bot to your group and auto-connect!"
+              >
+                <Input placeholder="e.g. -1001234567890 (or multiple IDs separated by comma)" style={{ fontFamily: 'monospace' }} />
               </Form.Item>
               {editingMerchant && (
                 <Form.Item label={t.status || "Status"} name="status" rules={[{ required: true }]}>

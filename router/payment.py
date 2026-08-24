@@ -38,7 +38,16 @@ async def create_payment_invoice(payload: CheckoutRequest, background_tasks: Bac
     print(f"API REQUEST: Created ledger context instance entry row inside database model. ID: {inserted_id}")
 
     target_link = merchant.payment_link_usd if currency_clean == "USD" else merchant.payment_link_khr
-    background_tasks.add_task(run_payment_worker, inserted_id, payload.amount, currency_clean, target_link)
+    background_tasks.add_task(run_payment_worker, inserted_id, payload.amount, currency_clean, target_link, payload.code_merchant)
+
+    from service.telegram_service import send_order_created_alert
+    background_tasks.add_task(send_order_created_alert, {
+        "id": inserted_id,
+        "amount": payload.amount,
+        "currency": currency_clean,
+        "code_merchant": payload.code_merchant
+    })
+
     return {"invoice_id": inserted_id, "payment_status": "PROCESSING"}
 
 @router.get("/verify/{invoice_id}", dependencies=[Depends(verify_api_key)])
