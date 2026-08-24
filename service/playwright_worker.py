@@ -59,7 +59,12 @@ async def init_browser():
             "--disable-accelerated-2d-canvas",
             "--disable-animations",                                  # Disable animations to save CPU
             "--disable-web-security",                                # Reduce security calculation overhead
-            "--disable-features=IsolateOrigins,site-per-process,TranslateUI,BlinkGenPropertyTrees", # Save CPU threads
+            "--renderer-process-limit=2",                            # Limit renderer child processes on 1-core VPS
+            "--disable-software-rasterizer",                         # Disable CPU-based raster rendering
+            "--disable-dev-tools",
+            "--disable-logging",
+            "--disable-infobars",
+            "--disable-features=IsolateOrigins,site-per-process,TranslateUI,BlinkGenPropertyTrees,AudioServiceOutOfProcess", # Save CPU threads
             "--disable-background-networking",                       # Stop background networking
             "--disable-background-timer-throttling",
             "--disable-backgrounding-occluded-windows",
