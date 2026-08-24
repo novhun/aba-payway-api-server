@@ -332,10 +332,8 @@ set_env_var() {
     fi
 
     if grep -q "^${key}=" "$env_file"; then
-        # Replace existing
         sed -i "s|^${key}=.*|${key}=${val}|" "$env_file" 2>/dev/null || true
     else
-        # Append
         echo "${key}=${val}" >> "$env_file"
     fi
 }
@@ -353,7 +351,6 @@ configure_env() {
         local cur_user=$(grep "^ADMIN_USERNAME=" "$env_file" 2>/dev/null | cut -d '=' -f2- || true)
         if [ -n "$cur_pass" ] && [ "$cur_pass" != "admin" ] && [ -n "$cur_user" ]; then
             echo -e "${GREEN}✅ Environment (.env) already configured (Admin: ${cur_user}). Skipping.${NC}"
-            # Ensure PORT=8000 and database file exist
             set_env_var "PORT" "8000"
             touch "$APP_DIR/aba_automation.db"
             chmod 666 "$APP_DIR/aba_automation.db"
@@ -393,7 +390,6 @@ configure_firewall() {
         return 0
     fi
 
-    # Check if port 8000 is already allowed
     if ufw status | grep -q "8000/tcp.*ALLOW"; then
         echo -e "${GREEN}✅ Firewall rules already configured. Skipping.${NC}"
         return 0
@@ -588,6 +584,49 @@ EOF
     echo -e " Your API is now live at: ${YELLOW}https://$DOMAIN_NAME/docs${NC}"
 }
 
+# Update Source Code from Git & Reload Service
+update_source_code() {
+    check_root
+    ensure_project_files
+    check_install_git
+    cd "$APP_DIR"
+
+    echo -e "\n${PURPLE}${BOLD}==============================================================================${NC}"
+    echo -e "${GREEN}${BOLD}     📥 UPDATING SOURCE CODE FROM GIT REPOSITORY                              ${NC}"
+    echo -e "${PURPLE}${BOLD}==============================================================================${NC}"
+    echo -e "${BLUE}📡 Pulling latest changes from Git...${NC}"
+
+    if ! git pull; then
+        echo -e "\n${RED}❌ Git pull failed.${NC}"
+        echo -e "   If you need authentication, please run: ${YELLOW}sudo bash host.sh --token <YOUR_TOKEN>${NC}"
+        return 1
+    fi
+
+    echo -e "${GREEN}✅ Latest code pulled successfully.${NC}"
+
+    # Auto-detect whether to rebuild Docker or reload Systemd
+    if command -v docker &>/dev/null && [ "$(docker compose ps -q payway-api 2>/dev/null)" ]; then
+        echo -e "${BLUE}🐳 Rebuilding Docker container with latest changes...${NC}"
+        docker compose down --remove-orphans >/dev/null 2>&1 || true
+        docker compose up -d --build
+        echo -e "${GREEN}✅ Docker container updated and restarted!${NC}"
+        docker compose ps
+    elif systemctl is-active --quiet aba-payway 2>/dev/null; then
+        echo -e "${BLUE}🐍 Updating Python dependencies and restarting Systemd service...${NC}"
+        source "$APP_DIR/venv/bin/activate"
+        pip install -r "$APP_DIR/requirements.txt"
+        playwright install chromium 2>/dev/null || true
+        systemctl restart aba-payway
+        echo -e "${GREEN}✅ Systemd service updated and restarted!${NC}"
+        sleep 2
+        systemctl status aba-payway --no-pager
+    else
+        echo -e "${YELLOW}ℹ️ Code updated. Start your service with Option 1 (Docker) or Option 2 (Real on VPS).${NC}"
+    fi
+
+    print_deployment_info "Updated & Running"
+}
+
 # Main Interactive Menu
 main_menu() {
     ensure_project_files
@@ -669,26 +708,7 @@ main_menu() {
                 read -p "Press Enter to return to menu..."
                 ;;
             8)
-                check_root
-                check_install_git
-                cd "$APP_DIR"
-                echo -e "${BLUE}📥 Pulling latest Git changes...${NC}"
-                git pull || echo -e "${YELLOW}Git pull failed. Please authenticate via Option 3 first.${NC}"
-                
-                # Auto-detect whether to rebuild Docker or reload Systemd
-                if command -v docker &>/dev/null && [ "$(docker compose ps -q payway-api 2>/dev/null)" ]; then
-                    echo -e "${BLUE}Rebuilding Docker container with latest changes...${NC}"
-                    deploy_docker_mode
-                elif systemctl is-active --quiet aba-payway 2>/dev/null; then
-                    echo -e "${BLUE}Updating Python dependencies and restarting Systemd...${NC}"
-                    source "$APP_DIR/venv/bin/activate"
-                    pip install -r "$APP_DIR/requirements.txt"
-                    playwright install chromium 2>/dev/null || true
-                    systemctl restart aba-payway
-                    echo -e "${GREEN}✅ Updated and restarted!${NC}"
-                else
-                    echo -e "${YELLOW}Code pulled. Please deploy with Option 1 (Docker) or Option 2 (Real on VPS).${NC}"
-                fi
+                update_source_code
                 read -p "Press Enter to return to menu..."
                 ;;
             9)
@@ -742,6 +762,9 @@ if [ "$1" = "--docker" ] || [ "$1" = "-d" ]; then
     exit 0
 elif [ "$1" = "--native" ] || [ "$1" = "--vps" ] || [ "$1" = "-n" ]; then
     deploy_native_mode
+    exit 0
+elif [ "$1" = "--update" ] || [ "$1" = "-u" ] || [ "$1" = "--pull" ]; then
+    update_source_code
     exit 0
 elif [ "$1" = "--token" ] || [ "$1" = "-t" ]; then
     check_root
