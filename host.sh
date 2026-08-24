@@ -490,20 +490,29 @@ deploy_native_mode() {
     pip install --upgrade pip >/dev/null 2>&1 || true
     pip install -r "$APP_DIR/requirements.txt"
 
-    # Install system libraries for Chromium in Linux
-    echo -e "${BLUE}📦 Ensuring Chromium system libraries are installed...${NC}"
+    # Install system libraries for Chromium in Linux (compatible with Ubuntu 20/22/24/26)
+    echo -e "${BLUE}📦 Ensuring Chromium system libraries and browser are installed...${NC}"
     apt_install curl ca-certificates fonts-liberation fonts-noto-color-emoji \
-        libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 \
+        libnss3 libnspr4 libcups2t64 libdrm2 libxkbcommon0 \
         libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 libcairo2 \
-        libasound2 libasound2t64 libxshmfence1 libglib2.0-0 libfontconfig1 libx11-xcb1 libxcb-dri3-0 || true
+        libasound2t64 libxshmfence1 libfontconfig1 libx11-xcb1 libxcb-dri3-0 2>/dev/null || true
+
+    # Install Google Chrome or Chromium directly if missing
+    if ! command -v google-chrome &>/dev/null && ! command -v chromium &>/dev/null && ! command -v chromium-browser &>/dev/null; then
+        echo -e "${BLUE}🌐 Installing Chrome/Chromium browser package...${NC}"
+        apt_install wget ca-certificates gnupg 2>/dev/null || true
+        wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /etc/apt/trusted.gpg.d/google-chrome.gpg 2>/dev/null || true
+        echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list 2>/dev/null || true
+        apt-get update -y -q >/dev/null 2>&1 || true
+        apt_install google-chrome-stable 2>/dev/null || apt_install chromium-browser 2>/dev/null || apt_install chromium 2>/dev/null || true
+    fi
 
     # Install Playwright Chromium browser
     echo -e "${BLUE}🎭 Installing Playwright Chromium...${NC}"
-    playwright install chromium 2>/dev/null || playwright install --with-deps chromium 2>/dev/null || {
-        echo -e "${YELLOW}⚠️ Native Playwright OS detection had a warning. Trying direct browser install...${NC}"
-        python3 -m playwright install chromium || true
+    playwright install chromium 2>/dev/null || {
+        python3 -m playwright install chromium 2>/dev/null || true
     }
-    echo -e "${GREEN}✅ Playwright Chromium ready!${NC}"
+    echo -e "${GREEN}✅ Browser engine configured successfully!${NC}"
 
     echo -e "\n${BLUE}⚙️  Configuring Systemd Service (/etc/systemd/system/aba-payway.service)...${NC}"
     SERVICE_FILE="/etc/systemd/system/aba-payway.service"

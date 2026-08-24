@@ -1,3 +1,5 @@
+import os
+import shutil
 import asyncio
 import json
 from typing import Optional
@@ -30,19 +32,53 @@ async def init_browser():
     global playwright_instance, browser_instance
     if browser_instance is None:
         playwright_instance = await async_playwright().start()
-        browser_instance = await playwright_instance.chromium.launch(
-            headless=True,
-            args=[
-                "--disable-blink-features=AutomationControlled",
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-                "--disable-dev-shm-usage",
-                "--disable-accelerated-2d-canvas",
-                "--no-first-run",
-                "--no-zygote",
-                "--disable-gpu"
-            ]
-        )
+
+        # Find system-installed Chrome/Chromium if Playwright internal binary isn't available
+        executable_path = None
+        candidates = [
+            shutil.which("google-chrome-stable"),
+            shutil.which("google-chrome"),
+            shutil.which("chromium"),
+            shutil.which("chromium-browser"),
+            "/usr/bin/google-chrome-stable",
+            "/usr/bin/google-chrome",
+            "/usr/bin/chromium",
+            "/usr/bin/chromium-browser"
+        ]
+        for c in candidates:
+            if c and os.path.exists(c) and os.access(c, os.X_OK):
+                executable_path = c
+                break
+
+        launch_args = [
+            "--disable-blink-features=AutomationControlled",
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-accelerated-2d-canvas",
+            "--no-first-run",
+            "--no-zygote",
+            "--disable-gpu"
+        ]
+
+        launch_kwargs = {
+            "headless": True,
+            "args": launch_args
+        }
+
+        # If system browser is found, use it; otherwise fallback to default playwright chromium
+        if executable_path:
+            launch_kwargs["executable_path"] = executable_path
+            print(f"LOG: [Playwright] Launching system browser: {executable_path}")
+            try:
+                browser_instance = await playwright_instance.chromium.launch(**launch_kwargs)
+            except Exception as e:
+                print(f"LOG: [Playwright] System browser launch fallback error: {e}")
+                launch_kwargs.pop("executable_path", None)
+                browser_instance = await playwright_instance.chromium.launch(**launch_kwargs)
+        else:
+            browser_instance = await playwright_instance.chromium.launch(**launch_kwargs)
+
         print("LOG: [Playwright] Global Chromium browser instance launched.")
 
 async def close_browser():
