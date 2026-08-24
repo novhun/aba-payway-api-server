@@ -1,0 +1,3141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PayWay Engine — Payment Infrastructure</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@100..900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Kantumruy Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f2f5;
+        }
+
+        .login-container {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+        }
+
+        .login-card {
+            width: 90%;
+            max-width: 400px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, #1677ff, #52c41a);
+            border-radius: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            margin: 0 auto 15px auto;
+            box-shadow: 0 4px 12px rgba(22, 119, 255, 0.4);
+        }
+
+        .mobile-bottom-nav {
+            display: none;
+        }
+
+        .mobile-nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 0;
+            color: #888;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .mobile-nav-item.active {
+            color: #1677ff;
+        }
+
+        .mobile-nav-item span:not(.anticon) {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            font-size: 11px;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-nav-item.active span:not(.anticon) {
+            max-height: 20px;
+            opacity: 1;
+            margin-top: 2px;
+        }
+
+        .mobile-nav-item .anticon {
+            font-size: 22px;
+            margin-bottom: 0px;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-nav-item.active .anticon {
+            font-size: 20px;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .desktop-only {
+                display: none !important;
+            }
+
+            .mobile-padding {
+                padding: 12px 12px 80px 12px !important;
+            }
+
+            .mobile-bottom-nav {
+                display: flex;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                background: #fff;
+                box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+                z-index: 1000;
+                justify-content: space-around;
+            }
+        }
+
+        body.theme-glass {
+            background: url('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80') no-repeat center center fixed;
+            background-size: cover;
+        }
+
+        body.theme-glass .ant-layout,
+        body.theme-glass .ant-layout-header,
+        body.theme-glass .ant-layout-sider,
+        body.theme-glass .mobile-bottom-nav {
+            background: rgba(255, 255, 255, 0.15) !important;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: none;
+        }
+
+        body.theme-glass .ant-card,
+        body.theme-glass .ant-table-wrapper .ant-table,
+        body.theme-glass .ant-table-cell {
+            background: rgba(255, 255, 255, 0.25) !important;
+            backdrop-filter: blur(16px);
+        }
+
+        body.theme-dark {
+            background: #141414;
+        }
+
+        body.theme-dark .mobile-bottom-nav {
+            background: #1f1f1f !important;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        @keyframes pulse-live {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(82, 196, 26, 0.7);
+            }
+
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 8px rgba(82, 196, 26, 0);
+            }
+
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(82, 196, 26, 0);
+            }
+        }
+
+        .live-dot {
+            width: 10px;
+            height: 10px;
+            background-color: #52c41a;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse-live 1.8s infinite cubic-bezier(0.45, 0, 0.55, 1);
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+
+        .metric-card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .metric-card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08) !important;
+        }
+
+        .icon-wrapper-circle {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        /* =========================================================
+   PAYWAY ENGINE — PREMIUM FINTECH REDESIGN
+   Visual layer only: existing React/API behavior preserved.
+   ========================================================= */
+        :root {
+            --pw-bg: #f4f7fb;
+            --pw-surface: #ffffff;
+            --pw-border: #e7edf5;
+            --pw-text: #101828;
+            --pw-muted: #667085;
+            --pw-blue: #2563eb;
+            --pw-cyan: #06b6d4;
+            --pw-dark: #0b1220;
+            --pw-sidebar: #0d1729;
+            --pw-radius: 18px
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            background: var(--pw-bg) !important;
+            color: var(--pw-text);
+            font-family: 'Kantumruy Pro', Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important
+        }
+
+        body:not(.theme-dark):not(.theme-glass) {
+            background: radial-gradient(circle at 10% 0%, rgba(37, 99, 235, .07), transparent 28%), radial-gradient(circle at 90% 10%, rgba(6, 182, 212, .06), transparent 24%), var(--pw-bg) !important
+        }
+
+        .ant-layout {
+            background: transparent !important
+        }
+
+        .ant-layout-header {
+            height: 72px !important;
+            line-height: 72px !important;
+            border-bottom: 1px solid rgba(15, 23, 42, .07) !important;
+            background: rgba(255, 255, 255, .82) !important;
+            backdrop-filter: blur(18px) !important;
+            padding: 0 28px !important;
+            position: sticky !important;
+            top: 0;
+            z-index: 20 !important
+        }
+
+        .ant-layout-header:after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: -1px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #2563eb55, #06b6d455, transparent)
+        }
+
+        .ant-layout-header .ant-typography {
+            color: #101828 !important
+        }
+
+        .ant-layout-header>div:first-child {
+            gap: 11px !important
+        }
+
+        .ant-layout-header>div:first-child>div:first-child {
+            width: 40px !important;
+            height: 40px !important;
+            min-width: 40px !important;
+            border-radius: 13px !important;
+            background: linear-gradient(135deg, #2563eb, #06b6d4) !important;
+            box-shadow: 0 8px 22px rgba(37, 99, 235, .28) !important;
+            font-size: 18px !important
+        }
+
+        .ant-layout-header .ant-select-selector {
+            border-radius: 10px !important;
+            border-color: var(--pw-border) !important;
+            background: rgba(255, 255, 255, .7) !important
+        }
+
+        .ant-layout-header .ant-btn {
+            border-radius: 10px !important
+        }
+
+        .ant-layout-sider {
+            background: linear-gradient(180deg, #0b1424 0%, #101d31 100%) !important;
+            border-right: 0 !important;
+            box-shadow: 8px 0 30px rgba(15, 23, 42, .08);
+            position: sticky !important;
+            left: 0;
+            top: 72px;
+            height: calc(100vh - 72px) !important;
+            z-index: 15
+        }
+
+        .ant-layout-sider .ant-menu {
+            background: transparent !important;
+            color: #91a0b8 !important;
+            padding: 18px 12px !important
+        }
+
+        .ant-layout-sider .ant-menu-item {
+            height: 46px !important;
+            line-height: 46px !important;
+            margin: 4px 0 !important;
+            border-radius: 12px !important;
+            color: #94a3b8 !important;
+            font-weight: 500 !important
+        }
+
+        .ant-layout-sider .ant-menu-item:hover {
+            background: rgba(255, 255, 255, .07) !important;
+            color: #fff !important
+        }
+
+        .ant-layout-sider .ant-menu-item-selected {
+            background: linear-gradient(90deg, rgba(37, 99, 235, .95), rgba(6, 182, 212, .68)) !important;
+            color: #fff !important;
+            box-shadow: 0 8px 20px rgba(37, 99, 235, .20) !important
+        }
+
+        .ant-layout-sider .ant-menu-item .anticon {
+            font-size: 17px !important
+        }
+
+        .ant-layout-content {
+            padding: 30px !important;
+            max-width: 1800px;
+            width: 100%;
+            margin: 0 auto !important
+        }
+
+        .ant-card {
+            border: 1px solid var(--pw-border) !important;
+            border-radius: var(--pw-radius) !important;
+            background: rgba(255, 255, 255, .92) !important;
+            box-shadow: 0 8px 30px rgba(15, 23, 42, .045) !important;
+            overflow: hidden
+        }
+
+        .ant-card-head {
+            border-bottom: 1px solid var(--pw-border) !important;
+            min-height: 62px !important
+        }
+
+        .ant-card-head-title {
+            font-weight: 700 !important;
+            color: #101828 !important
+        }
+
+        .metric-card-hover {
+            border-radius: 18px !important;
+            transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease !important
+        }
+
+        .metric-card-hover:hover {
+            transform: translateY(-4px) !important;
+            box-shadow: 0 16px 35px rgba(15, 23, 42, .10) !important;
+            border-color: #d6e1f0 !important
+        }
+
+        .icon-wrapper-circle {
+            border-radius: 13px !important;
+            width: 46px !important;
+            height: 46px !important;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .5)
+        }
+
+        .ant-statistic-title {
+            color: #667085 !important;
+            font-weight: 600 !important
+        }
+
+        .ant-statistic-content {
+            font-weight: 800 !important;
+            letter-spacing: -.5px
+        }
+
+        .ant-progress-inner {
+            background: #edf2f7 !important
+        }
+
+        .ant-tag {
+            border-radius: 999px !important;
+            font-weight: 600 !important;
+            padding-inline: 9px !important
+        }
+
+        .ant-table-wrapper .ant-table {
+            border-radius: 16px !important;
+            overflow: hidden;
+            background: transparent !important
+        }
+
+        .ant-table-thead>tr>th {
+            background: #f8fafc !important;
+            color: #667085 !important;
+            font-size: 12px !important;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            border-bottom: 1px solid var(--pw-border) !important
+        }
+
+        .ant-table-tbody>tr>td {
+            border-bottom: 1px solid #eef2f6 !important
+        }
+
+        .ant-table-tbody>tr:hover>td {
+            background: #f8fbff !important
+        }
+
+        .ant-input,
+        .ant-input-affix-wrapper,
+        .ant-select-selector,
+        .ant-picker {
+            border-radius: 11px !important;
+            border-color: #dfe6ef !important;
+            box-shadow: none !important
+        }
+
+        .ant-input:focus,
+        .ant-input-affix-wrapper-focused,
+        .ant-select-focused .ant-select-selector {
+            border-color: #7da5ff !important;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .09) !important
+        }
+
+        .ant-btn {
+            border-radius: 11px !important;
+            font-weight: 600 !important
+        }
+
+        .ant-btn-primary {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+            border: 0 !important;
+            box-shadow: 0 7px 18px rgba(37, 99, 235, .20) !important
+        }
+
+        .ant-btn-primary:hover {
+            background: linear-gradient(135deg, #3b82f6, #2563eb) !important
+        }
+
+        .ant-switch-checked {
+            background: #2563eb !important
+        }
+
+        .ant-progress-bg {
+            border-radius: 999px !important
+        }
+
+        .live-dot {
+            box-shadow: 0 0 0 0 rgba(37, 99, 235, .4) !important
+        }
+
+        /* Dashboard hero / controls */
+        .ant-layout-content>div>div:first-child .ant-card:first-child {
+            background: linear-gradient(135deg, #0d1729 0%, #142847 55%, #123e5c 100%) !important;
+            border: 0 !important;
+            color: white !important;
+            box-shadow: 0 18px 45px rgba(13, 23, 41, .16) !important
+        }
+
+        .ant-layout-content>div>div:first-child .ant-card:first-child .ant-typography {
+            color: white !important
+        }
+
+        .ant-layout-content>div>div:first-child .ant-card:first-child .ant-typography.ant-typography-secondary {
+            color: #a9b8ce !important
+        }
+
+        .ant-layout-content>div>div:first-child .ant-card:first-child .ant-switch {
+            background: rgba(255, 255, 255, .22) !important
+        }
+
+        /* Login */
+        .login-container {
+            background: radial-gradient(circle at 15% 15%, #2563eb 0, transparent 28%), radial-gradient(circle at 85% 85%, #06b6d4 0, transparent 30%), #07111f !important
+        }
+
+        .login-card {
+            width: min(440px, 92%) !important;
+            padding: 38px !important;
+            border-radius: 26px !important;
+            background: rgba(255, 255, 255, .96) !important;
+            box-shadow: 0 35px 90px rgba(0, 0, 0, .28) !important;
+            border: 1px solid rgba(255, 255, 255, .5) !important
+        }
+
+        .login-logo {
+            width: 72px !important;
+            height: 72px !important;
+            border-radius: 20px !important;
+            background: linear-gradient(135deg, #2563eb, #06b6d4) !important;
+            box-shadow: 0 15px 35px rgba(37, 99, 235, .28) !important
+        }
+
+        .login-header {
+            margin-bottom: 34px !important
+        }
+
+        .login-header .ant-typography {
+            color: #101828 !important
+        }
+
+        .login-card .ant-input,
+        .login-card .ant-input-affix-wrapper {
+            height: 48px !important;
+            border-radius: 13px !important
+        }
+
+        .login-card .ant-btn {
+            height: 48px !important;
+            border-radius: 13px !important;
+            font-size: 15px !important
+        }
+
+        /* Glass */
+        body.theme-glass .ant-layout-header {
+            background: rgba(8, 17, 31, .35) !important;
+            border-color: rgba(255, 255, 255, .12) !important
+        }
+
+        body.theme-glass .ant-layout-header .ant-typography {
+            color: #fff !important
+        }
+
+        body.theme-glass .ant-layout-sider {
+            background: rgba(9, 18, 32, .48) !important;
+            backdrop-filter: blur(22px) !important
+        }
+
+        body.theme-glass .ant-card {
+            background: rgba(255, 255, 255, .16) !important;
+            border-color: rgba(255, 255, 255, .18) !important;
+            backdrop-filter: blur(20px) !important
+        }
+
+        body.theme-glass .ant-card-head,
+        body.theme-glass .ant-table-thead>tr>th {
+            background: rgba(255, 255, 255, .08) !important;
+            border-color: rgba(255, 255, 255, .12) !important
+        }
+
+        /* Dark */
+        body.theme-dark {
+            background: #070d17 !important;
+            color: #e5e7eb
+        }
+
+        body.theme-dark .ant-layout-header {
+            background: rgba(8, 14, 24, .88) !important;
+            border-color: #182334 !important
+        }
+
+        body.theme-dark .ant-layout-header .ant-typography,
+        body.theme-dark .ant-card-head-title {
+            color: #f8fafc !important
+        }
+
+        body.theme-dark .ant-card {
+            background: #0e1726 !important;
+            border-color: #1b293c !important;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, .20) !important
+        }
+
+        body.theme-dark .ant-table-thead>tr>th {
+            background: #111d2d !important;
+            color: #8fa1ba !important;
+            border-color: #1b293c !important
+        }
+
+        body.theme-dark .ant-table-tbody>tr>td {
+            border-color: #182334 !important
+        }
+
+        body.theme-dark .ant-table-tbody>tr:hover>td {
+            background: #142236 !important
+        }
+
+        body.theme-dark .ant-input,
+        body.theme-dark .ant-input-affix-wrapper,
+        body.theme-dark .ant-select-selector,
+        body.theme-dark .ant-picker {
+            background: #0b1422 !important;
+            border-color: #26364c !important;
+            color: #e5e7eb !important
+        }
+
+        body.theme-dark .ant-layout-content>div>div:first-child .ant-card:first-child {
+            background: linear-gradient(135deg, #0d1729, #112d4a, #0c4251) !important
+        }
+
+        /* mobile */
+        @media(max-width:768px) {
+            .ant-layout-header {
+                padding: 0 14px !important;
+                height: 64px !important;
+                line-height: 64px !important
+            }
+
+            .ant-layout-content {
+                padding: 16px 12px 88px !important
+            }
+
+            .ant-card {
+                border-radius: 15px !important
+            }
+
+            .mobile-bottom-nav {
+                background: rgba(10, 18, 30, .94) !important;
+                backdrop-filter: blur(18px) !important;
+                border-top: 1px solid rgba(255, 255, 255, .08) !important
+            }
+
+            .mobile-nav-item {
+                color: #8392aa !important
+            }
+
+            .mobile-nav-item.active {
+                color: #60a5fa !important
+            }
+
+            .mobile-nav-item.active .anticon {
+                filter: drop-shadow(0 0 8px rgba(96, 165, 250, .45))
+            }
+        }
+    </style>
+
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Ant Design & DayJS -->
+    <script src="https://unpkg.com/dayjs@1.11.10/dayjs.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/antd@5.14.0/dist/reset.css" />
+    <script src="https://unpkg.com/antd@5.14.0/dist/antd.min.js"></script>
+    <script src="https://unpkg.com/@ant-design/icons@5.3.0/dist/index.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
+        const { Layout, Menu, Table, Card, Row, Col, Select, Typography, ConfigProvider, Space, Tag, Button, Modal, Form, Input, message, DatePicker, Statistic, Switch, Tabs, Progress, Badge, Tooltip, Divider, Radio, List, Checkbox, Alert, Dropdown } = antd;
+        const { Header, Content, Footer, Sider } = Layout;
+        const { Title, Text, Paragraph } = Typography;
+        const { GlobalOutlined, CheckCircleOutlined, SyncOutlined, CloseCircleOutlined, ClockCircleOutlined, DatabaseOutlined, ShopOutlined, PlusOutlined, UserOutlined, LockOutlined, LoginOutlined, LogoutOutlined, SettingOutlined, LineChartOutlined, EyeOutlined, EyeInvisibleOutlined, AppstoreOutlined, QrcodeOutlined, DownloadOutlined, ApiOutlined, HddOutlined, DashboardOutlined, ThunderboltOutlined, CloudServerOutlined, CodeOutlined, LoadingOutlined, PlayCircleOutlined, LinkOutlined, ReloadOutlined, SearchOutlined, SendOutlined } = icons;
+
+        function App() {
+            const [token, setToken] = useState(localStorage.getItem('adminToken'));
+            const [lang, setLang] = useState('en');
+            const [t, setT] = useState({});
+            const [data, setData] = useState({ orders: [], merchants: [], api_keys: [], api_logs: [] });
+            const [loading, setLoading] = useState(false);
+            const [currentView, setCurrentView] = useState('dashboard');
+            const [isModalVisible, setIsModalVisible] = useState(false);
+            const [editingMerchant, setEditingMerchant] = useState(null);
+            const [isApiKeyModalVisible, setIsApiKeyModalVisible] = useState(false);
+            const [editingApiKey, setEditingApiKey] = useState(null);
+            const [form] = Form.useForm();
+            const [apiForm] = Form.useForm();
+            const [qrResult, setQrResult] = useState(null);
+            const [activeApiKey, setActiveApiKey] = useState(null);
+            const [countdown, setCountdown] = useState(null);
+            const [selectedApiToken, setSelectedApiToken] = useState('YOUR_API_KEY');
+            const [selectedEndpoint, setSelectedEndpoint] = useState('create');
+            const [testPayload, setTestPayload] = useState('{\n  "code_merchant": "aba_merchant_1",\n  "amount": "1.50",\n  "currency": "USD"\n}');
+            const [testInvoiceId, setTestInvoiceId] = useState('12345');
+            const [testResults, setTestResults] = useState({});
+            const [isTesting, setIsTesting] = useState(false);
+
+            const executeTest = async (endpointType) => {
+                if (selectedApiToken === 'YOUR_API_KEY' && endpointType !== 'verify_html') {
+                    message.error("Please select an API Key first.");
+                    return;
+                }
+
+                setIsTesting(true);
+                try {
+                    if (endpointType === 'create') {
+                        const res = await fetch(`${window.location.origin}/api/v1/payment/create`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-API-Key': selectedApiToken
+                            },
+                            body: testPayload
+                        });
+                        const data = await res.json();
+                        setTestResults(prev => ({ ...prev, [endpointType]: data }));
+                        message.success("POST request executed successfully");
+                    } else if (endpointType === 'verify_json') {
+                        const res = await fetch(`${window.location.origin}/api/v1/payment/verify/${testInvoiceId}`, {
+                            headers: { 'X-API-Key': selectedApiToken }
+                        });
+                        const data = await res.json();
+                        setTestResults(prev => ({ ...prev, [endpointType]: data }));
+                        message.success("GET request executed successfully");
+                    } else if (endpointType === 'verify_html') {
+                        setTestResults(prev => ({ ...prev, [endpointType]: true }));
+                        message.success("Iframe loaded");
+                    }
+                } catch (err) {
+                    setTestResults(prev => ({ ...prev, [endpointType]: { error: err.message } }));
+                    message.error("Request failed: " + err.message);
+                } finally {
+                    setIsTesting(false);
+                }
+            };
+
+            const formatUTC = (dateStr) => {
+                if (!dateStr) return '-';
+                return new Date(dateStr.endsWith('Z') ? dateStr : dateStr + 'Z').toLocaleString();
+            };
+
+            const [themeMode, setThemeMode] = useState(localStorage.getItem('ui_theme') || 'light');
+            const [primaryColor, setPrimaryColor] = useState(localStorage.getItem('ui_color') || '#1677ff');
+
+            useEffect(() => {
+                localStorage.setItem('ui_theme', themeMode);
+                document.body.className = '';
+                if (themeMode === 'glass') document.body.classList.add('theme-glass');
+                if (themeMode === 'dark') document.body.classList.add('theme-dark');
+            }, [themeMode]);
+
+            useEffect(() => {
+                localStorage.setItem('ui_color', primaryColor);
+            }, [primaryColor]);
+
+            const [analytics, setAnalytics] = useState({
+                summary: { total_requests: 0, total_ips: 0, total_countries: 0, token_usage: [], country_usage: [] },
+                available_countries: [],
+                logs: []
+            });
+
+            useEffect(() => {
+                let timer;
+                if (countdown !== null && countdown > 0) {
+                    timer = setInterval(() => {
+                        setCountdown(prev => prev - 1);
+                    }, 1000);
+                } else if (countdown === 0) {
+                    setCountdown(null);
+                    if (activeApiKey && qrResult) {
+                        fetch(`/api/v1/payment/verify/${qrResult}`, {
+                            headers: { 'X-API-Key': activeApiKey }
+                        })
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.status && (data.status === 'EXPIRED' || data.status === 'FAILED')) {
+                                    const iframe = document.getElementById('qr-iframe');
+                                    if (iframe) iframe.src = iframe.src;
+                                }
+                            }).catch(() => { });
+                    }
+                }
+                return () => clearInterval(timer);
+            }, [countdown, activeApiKey, qrResult]);
+            const [analyticsFilters, setAnalyticsFilters] = useState({
+                start_date: '', end_date: '', method: 'ALL', country: 'ALL', search: ''
+            });
+            const [ledgerFilters, setLedgerFilters] = useState({
+                start_date: '', end_date: '', status: 'ALL', merchant_name: 'ALL', search: ''
+            });
+            const [availableMerchants, setAvailableMerchants] = useState([]);
+            const [visibleTokens, setVisibleTokens] = useState({});
+
+            const [dashboardData, setDashboardData] = useState({
+                total_orders: 0,
+                success_orders: 0,
+                active_merchants: 0,
+                active_api_keys: 0,
+                total_revenue_usd: 0,
+                total_revenue_khr: 0,
+                trend: [],
+                system_metrics: {
+                    cpu: { percent: 0, cores: 1 },
+                    ram: { total_gb: 0, used_gb: 0, free_gb: 0, percent: 0 },
+                    storage: { total_gb: 0, used_gb: 0, free_gb: 0, percent: 0 },
+                    process: { memory_mb: 0 },
+                    browser: { is_running: false, active_contexts: 0 }
+                },
+                recent_tasks: []
+            });
+
+            const [liveAutoRefresh, setLiveAutoRefresh] = useState(true);
+            const [lastSyncedTime, setLastSyncedTime] = useState(new Date().toLocaleTimeString());
+            const [taskStatusFilter, setTaskStatusFilter] = useState('ALL');
+            const [taskSearchText, setTaskSearchText] = useState('');
+
+            useEffect(() => {
+                fetch(`/assets/lang/${lang}.json`)
+                    .then(res => res.json())
+                    .then(strings => setT(strings))
+                    .catch(err => console.error("Failed to load translation:", err));
+            }, [lang]);
+
+            const handleLogin = (values) => {
+                const { username, password } = values;
+                const encoded = btoa(`${username}:${password}`);
+
+                // Test credentials by hitting data endpoint
+                fetch('/api/v1/admin/data', {
+                    headers: { 'Authorization': `Basic ${encoded}` }
+                })
+                    .then(res => {
+                        if (res.ok) {
+                            localStorage.setItem('adminToken', encoded);
+                            setToken(encoded);
+                            message.success('Login successful!');
+                        } else {
+                            message.error('Invalid username or password');
+                        }
+                    })
+                    .catch(err => {
+                        message.error('Login failed, please check network');
+                    });
+            };
+
+            const handleLogout = () => {
+                localStorage.removeItem('adminToken');
+                setToken(null);
+                message.info('Logged out securely.');
+            };
+
+            const fetchData = useCallback(() => {
+                if (!token) return;
+                setLoading(true);
+                fetch('/api/v1/admin/data', {
+                    headers: { 'Authorization': `Basic ${token}` }
+                })
+                    .then(res => {
+                        if (res.status === 401) {
+                            handleLogout();
+                            throw new Error("Unauthorized");
+                        }
+                        return res.json();
+                    })
+                    .then(json => {
+                        setData(prev => ({ ...json, orders: prev.orders || [] }));
+                        setLoading(false);
+                    })
+                    .catch(err => {
+                        console.error("Data fetch error:", err);
+                        setLoading(false);
+                    });
+            }, [token]);
+
+            const getReportTitle = () => {
+                let period = "All Time";
+                if (ledgerFilters.start_date && ledgerFilters.end_date) {
+                    period = `${ledgerFilters.start_date} to ${ledgerFilters.end_date}`;
+                } else if (ledgerFilters.start_date) {
+                    period = `From ${ledgerFilters.start_date}`;
+                } else if (ledgerFilters.end_date) {
+                    period = `Until ${ledgerFilters.end_date}`;
+                }
+                return period;
+            };
+
+            const exportToExcel = () => {
+                if (!data.orders || data.orders.length === 0) return message.warning('No data to export');
+                const exportData = data.orders.map(o => ({
+                    'ID': o.id,
+                    'Merchant': o.merchant_name,
+                    'Amount': o.amount,
+                    'Currency': o.currency,
+                    'Status': o.status,
+                    'Date': o.updated_at ? formatUTC(o.updated_at) : (o.created_at ? formatUTC(o.created_at) : '-')
+                }));
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Transactions");
+                XLSX.writeFile(wb, `transactions_report_${getReportTitle().replace(/ /g, '_')}.xlsx`);
+            };
+
+            const exportToPDF = () => {
+                if (!data.orders || data.orders.length === 0) return message.warning('No data to export');
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                doc.text(`Transactions Report (${getReportTitle()})`, 14, 15);
+
+                const tableColumn = ["ID", "Merchant", "Amount", "Currency", "Status", "Date"];
+                const tableRows = [];
+
+                data.orders.forEach(o => {
+                    tableRows.push([
+                        o.id,
+                        o.merchant_name,
+                        o.amount,
+                        o.currency,
+                        o.status,
+                        o.updated_at ? formatUTC(o.updated_at) : (o.created_at ? formatUTC(o.created_at) : '-')
+                    ]);
+                });
+
+                doc.autoTable({
+                    head: [tableColumn],
+                    body: tableRows,
+                    startY: 20,
+                });
+
+                doc.save("transactions_report.pdf");
+            };
+
+            useEffect(() => {
+                if (token) {
+                    fetchData();
+                }
+            }, [token]);
+
+            const fetchAnalytics = useCallback(() => {
+                if (!token) return;
+                setLoading(true);
+                const queryParams = new URLSearchParams();
+                if (analyticsFilters.start_date) queryParams.append("start_date", analyticsFilters.start_date);
+                if (analyticsFilters.end_date) queryParams.append("end_date", analyticsFilters.end_date);
+                if (analyticsFilters.method && analyticsFilters.method !== 'ALL') queryParams.append("method", analyticsFilters.method);
+                if (analyticsFilters.country && analyticsFilters.country !== 'ALL') queryParams.append("country", analyticsFilters.country);
+                if (analyticsFilters.search) queryParams.append("search", analyticsFilters.search);
+
+                fetch('/api/v1/admin/analytics?' + queryParams.toString(), {
+                    headers: { 'Authorization': `Basic ${token}` }
+                })
+                    .then(res => {
+                        if (res.status === 401) {
+                            handleLogout();
+                            throw new Error("Unauthorized");
+                        }
+                        return res.json();
+                    })
+                    .then(json => {
+                        setAnalytics(json);
+                        setLoading(false);
+                    })
+                    .catch(err => {
+                        console.error("Analytics fetch error:", err);
+                        setLoading(false);
+                    });
+            }, [token, analyticsFilters]);
+
+            const fetchDashboard = useCallback(() => {
+                if (!token) return;
+                fetch('/api/v1/admin/dashboard', {
+                    headers: { 'Authorization': `Basic ${token}` }
+                })
+                    .then(res => res.json())
+                    .then(json => {
+                        setDashboardData(json);
+                    })
+                    .catch(err => {
+                        console.error("Dashboard fetch error:", err);
+                    });
+            }, [token]);
+
+            const fetchLedger = useCallback(() => {
+                if (!token) return;
+                setLoading(true);
+                const queryParams = new URLSearchParams();
+                if (ledgerFilters.start_date) queryParams.append("start_date", ledgerFilters.start_date);
+                if (ledgerFilters.end_date) queryParams.append("end_date", ledgerFilters.end_date);
+                if (ledgerFilters.status && ledgerFilters.status !== 'ALL') queryParams.append("status", ledgerFilters.status);
+                if (ledgerFilters.merchant_name && ledgerFilters.merchant_name !== 'ALL') queryParams.append("merchant_name", ledgerFilters.merchant_name);
+                if (ledgerFilters.search) queryParams.append("search", ledgerFilters.search);
+
+                fetch('/api/v1/admin/ledger?' + queryParams.toString(), {
+                    headers: { 'Authorization': `Basic ${token}` }
+                })
+                    .then(res => res.json())
+                    .then(json => {
+                        setData(prev => ({ ...prev, orders: json.orders }));
+                        if (json.available_merchants) setAvailableMerchants(json.available_merchants);
+                        setLoading(false);
+                    })
+                    .catch(err => {
+                        console.error("Ledger fetch error:", err);
+                        setLoading(false);
+                    });
+            }, [token, ledgerFilters]);
+
+            useEffect(() => {
+                if (token && currentView === 'logs') {
+                    fetchAnalytics();
+                }
+            }, [token, currentView]); // fetch on view load, manual apply for filters
+
+            useEffect(() => {
+                if (token && currentView === 'dashboard') {
+                    fetchDashboard();
+                }
+            }, [token, currentView, fetchDashboard]);
+
+            useEffect(() => {
+                if (!token || currentView !== 'dashboard' || !liveAutoRefresh) return;
+                const interval = setInterval(() => {
+                    fetch('/api/v1/admin/live-status', {
+                        headers: { 'Authorization': `Basic ${token}` }
+                    })
+                        .then(res => {
+                            if (res.status === 401) {
+                                handleLogout();
+                                return null;
+                            }
+                            return res.json();
+                        })
+                        .then(json => {
+                            if (json) {
+                                setDashboardData(prev => ({
+                                    ...prev,
+                                    system_metrics: json.system_metrics || prev.system_metrics,
+                                    recent_tasks: json.recent_tasks || prev.recent_tasks
+                                }));
+                                setLastSyncedTime(new Date().toLocaleTimeString());
+                            }
+                        })
+                        .catch(err => console.error("Live status poll error:", err));
+                }, 2500);
+
+                return () => clearInterval(interval);
+            }, [token, currentView, liveAutoRefresh]);
+
+            useEffect(() => {
+                if (token && currentView === 'ledger') {
+                    fetchLedger();
+                }
+            }, [token, currentView, fetchLedger]);
+
+            const [settings, setSettings] = useState({
+                cors_origins: '*',
+                telegram_bot_token: '',
+                telegram_chat_id: '',
+                telegram_enabled: false,
+                telegram_notify_success: true,
+                telegram_notify_create: false,
+                db_size_bytes: 0
+            });
+            const [telegramChatMode, setTelegramChatMode] = useState('auto');
+            const [detectedChats, setDetectedChats] = useState([]);
+            const [botProfile, setBotProfile] = useState(null);
+            const [fetchingChats, setFetchingChats] = useState(false);
+            const [testingTelegram, setTestingTelegram] = useState(false);
+
+            const fetchSettings = useCallback(() => {
+                if (!token) return;
+                fetch('/api/v1/admin/settings', {
+                    headers: { 'Authorization': `Basic ${token}` }
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        setSettings(data);
+                        if (data.telegram_bot_token && detectedChats.length === 0) {
+                            // Auto fetch bot profile if token exists
+                            fetch('/api/v1/admin/telegram/get-chats', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Basic ${token}` },
+                                body: JSON.stringify({ bot_token: data.telegram_bot_token })
+                            })
+                                .then(res => res.json())
+                                .then(resData => {
+                                    if (resData.ok) {
+                                        setBotProfile(resData.bot);
+                                        setDetectedChats(resData.chats || []);
+                                    }
+                                })
+                                .catch(() => { });
+                        }
+                    });
+            }, [token, detectedChats.length]);
+
+            useEffect(() => {
+                if (token && currentView === 'settings') {
+                    fetchSettings();
+                }
+            }, [token, currentView, fetchSettings]);
+
+            const handleSaveSettings = () => {
+                fetch('/api/v1/admin/settings', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Basic ${token}` },
+                    body: JSON.stringify(settings)
+                })
+                    .then(res => res.json())
+                    .then(() => {
+                        message.success(t.settings_saved || 'Settings saved successfully!');
+                    });
+            };
+
+            const handleFetchTelegramChats = () => {
+                if (!settings.telegram_bot_token) {
+                    message.warning(t.telegram_bot_hint || 'Please enter your Telegram Bot Token first.');
+                    return;
+                }
+                setFetchingChats(true);
+                fetch('/api/v1/admin/telegram/get-chats', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Basic ${token}` },
+                    body: JSON.stringify({ bot_token: settings.telegram_bot_token })
+                })
+                    .then(async res => {
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.detail || data.error || 'Failed to query Telegram');
+                        return data;
+                    })
+                    .then(data => {
+                        setBotProfile(data.bot);
+                        setDetectedChats(data.chats || []);
+                        if (data.chats && data.chats.length > 0) {
+                            message.success(`Found ${data.chats.length} chat(s) connected to @${data.bot?.username || 'bot'}`);
+                        } else {
+                            message.info(t.telegram_no_chats_found || 'No chats detected yet.');
+                        }
+                    })
+                    .catch(err => {
+                        message.error(err.message);
+                    })
+                    .finally(() => setFetchingChats(false));
+            };
+
+            const handleTestTelegram = () => {
+                if (!settings.telegram_bot_token || !settings.telegram_chat_id) {
+                    message.warning('Please enter both Bot Token and Chat ID before testing.');
+                    return;
+                }
+                setTestingTelegram(true);
+                fetch('/api/v1/admin/telegram/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Basic ${token}` },
+                    body: JSON.stringify({ bot_token: settings.telegram_bot_token, chat_id: settings.telegram_chat_id })
+                })
+                    .then(async res => {
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.detail || data.error || 'Failed to send test message');
+                        return data;
+                    })
+                    .then(() => {
+                        message.success(t.telegram_test_success || 'Test notification delivered successfully to Telegram!');
+                    })
+                    .catch(err => {
+                        message.error(err.message);
+                    })
+                    .finally(() => setTestingTelegram(false));
+            };
+
+            const handleInviteMerchantToTelegram = (merchant) => {
+                const username = botProfile?.username;
+                if (!username) {
+                    message.warning('Please click "Fetch & Detect Chats" in Settings first to load your Bot profile.');
+                    return;
+                }
+                const inviteUrl = `https://t.me/${username}?startgroup=${merchant.code_merchant}`;
+                window.open(inviteUrl, '_blank');
+
+                message.loading({
+                    content: `Opening Telegram to add bot for '${merchant.name}'. System is listening to auto-connect...`,
+                    duration: 15
+                });
+
+                // Polling sync to detect newly linked chat
+                let count = 0;
+                const interval = setInterval(() => {
+                    count++;
+                    if (count > 8) {
+                        clearInterval(interval);
+                        return;
+                    }
+                    fetch('/api/v1/admin/telegram/sync', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Basic ${token}` },
+                        body: JSON.stringify({ bot_token: settings.telegram_bot_token })
+                    })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.connected && data.connected.length > 0) {
+                                const matched = data.connected.find(c => c.code_merchant === merchant.code_merchant);
+                                if (matched) {
+                                    message.success(`🎉 Auto-Connected '${merchant.name}' to ${matched.chat_title} (${matched.chat_id})!`);
+                                    clearInterval(interval);
+                                    fetchData();
+                                }
+                            }
+                        })
+                        .catch(() => { });
+                }, 3000);
+            };
+
+            const formatBytes = (bytes, decimals = 2) => {
+                if (bytes === undefined || bytes === null || !+bytes) return '0 Bytes';
+                const k = 1024;
+                const dm = decimals < 0 ? 0 : decimals;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+            };
+
+            const handleClearAnalytics = () => {
+                Modal.confirm({
+                    title: t.clear_analytics_confirm || 'Are you sure you want to clear ALL traffic logs?',
+                    okText: t.delete || 'Delete',
+                    okType: 'danger',
+                    cancelText: t.cancel || 'Cancel',
+                    onOk() {
+                        fetch(`/api/v1/admin/analytics/clear`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Basic ${token}` }
+                        })
+                            .then(res => res.json())
+                            .then(() => {
+                                message.success(t.clear_success || 'Cleared all analytics data successfully');
+                                fetchAnalytics();
+                            });
+                    }
+                });
+            };
+
+            const handleBanIp = (ip) => {
+                Modal.confirm({
+                    title: t.ban_ip_confirm || `Are you sure you want to ban ${ip}?`,
+                    onOk() {
+                        fetch(`/api/v1/admin/banned_ips`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Basic ${token}` },
+                            body: JSON.stringify({ ip_address: ip, reason: "Banned from Traffic Logs" })
+                        })
+                            .then(res => res.json())
+                            .then((data) => {
+                                if (data.detail) {
+                                    message.error(data.detail);
+                                } else {
+                                    message.success(t.ban_success || `Banned IP ${ip} successfully`);
+                                }
+                            });
+                    }
+                });
+            };
+
+            const handleAddApiKey = (values) => {
+                const method = editingApiKey ? 'PUT' : 'POST';
+                const url = editingApiKey ? `/api/v1/admin/apikeys/${editingApiKey.id}` : '/api/v1/admin/apikeys';
+                fetch(url, {
+                    method: method,
+                    headers: {
+                        'Authorization': `Basic ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(values)
+                })
+                    .then(res => res.json())
+                    .then(() => {
+                        message.success(t.token_updated || 'API Key updated successfully!');
+                        setIsApiKeyModalVisible(false);
+                        apiForm.resetFields();
+                        setEditingApiKey(null);
+                        fetchData();
+                    })
+                    .catch(err => message.error('Failed to update API Key'));
+            };
+
+            const handleDeleteApiKey = (id) => {
+                Modal.confirm({
+                    title: t.delete_confirm || 'Are you sure you want to delete this API Key?',
+                    okText: t.delete || 'Delete',
+                    okType: 'danger',
+                    cancelText: t.cancel || 'Cancel',
+                    onOk() {
+                        fetch(`/api/v1/admin/apikeys/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Basic ${token}` }
+                        })
+                            .then(res => res.json())
+                            .then(() => {
+                                message.success('Deleted successfully');
+                                fetchData();
+                            });
+                    }
+                });
+            };
+
+            const openApiModal = (record = null) => {
+                if (record) {
+                    setEditingApiKey(record);
+                    apiForm.setFieldsValue(record);
+                } else {
+                    setEditingApiKey(null);
+                    apiForm.resetFields();
+                }
+                setIsApiKeyModalVisible(true);
+            };
+
+            const openMerchantModal = (record = null) => {
+                if (record) {
+                    setEditingMerchant(record);
+                    form.setFieldsValue(record);
+                } else {
+                    setEditingMerchant(null);
+                    form.resetFields();
+                }
+                setIsModalVisible(true);
+            };
+
+            const handleAddMerchant = (values) => {
+                const method = editingMerchant ? 'PUT' : 'POST';
+                const url = editingMerchant ? `/api/v1/admin/merchants/${editingMerchant.code_merchant}` : '/api/v1/admin/merchants';
+                fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Basic ${token}`
+                    },
+                    body: JSON.stringify(values)
+                })
+                    .then(res => {
+                        if (res.status === 401) {
+                            handleLogout();
+                            throw new Error("Unauthorized");
+                        }
+                        if (!res.ok) throw new Error('Failed to create merchant');
+                        return res.json();
+                    })
+                    .then(() => {
+                        message.success(t.success_msg || 'Merchant saved successfully');
+                        setIsModalVisible(false);
+                        setEditingMerchant(null);
+                        form.resetFields();
+                        fetchData();
+                    })
+                    .catch(err => {
+                        if (err.message !== "Unauthorized") {
+                            message.error('Error adding merchant');
+                            console.error(err);
+                        }
+                    });
+            };
+
+            if (!token) {
+                return (
+                    <ConfigProvider theme={{
+                        algorithm: themeMode === 'dark' ? antd.theme.darkAlgorithm : antd.theme.defaultAlgorithm,
+                        token: {
+                            fontFamily: "'Kantumruy Pro', sans-serif",
+                            colorPrimary: primaryColor,
+                            ...(themeMode === 'glass' ? { colorBgContainer: 'rgba(255,255,255,0.4)' } : {})
+                        }
+                    }}>
+                        <div className="login-container">
+                            <div className="login-card">
+                                <div className="login-header">
+                                    <div className="login-logo">P</div>
+                                    <Title level={3} style={{ marginBottom: 0, color: '#111' }}>PayWay Engine</Title>
+                                    <Text type="secondary">Admin Portal Authentication</Text>
+                                </div>
+                                <Form
+                                    name="login"
+                                    initialValues={{ remember: true }}
+                                    onFinish={handleLogin}
+                                    size="large"
+                                >
+                                    <Form.Item
+                                        name="username"
+                                        rules={[{ required: true, message: 'Please input your username!' }]}
+                                    >
+                                        <Input prefix={<UserOutlined style={{ color: '#bfbfbf' }} />} placeholder="Username" />
+                                    </Form.Item>
+                                    <Form.Item
+                                        name="password"
+                                        rules={[{ required: true, message: 'Please input your password!' }]}
+                                    >
+                                        <Input.Password prefix={<LockOutlined style={{ color: '#bfbfbf' }} />} placeholder="Password" />
+                                    </Form.Item>
+                                    <Form.Item>
+                                        <Button type="primary" htmlType="submit" style={{ width: '100%', height: 42, borderRadius: 8 }} icon={<LoginOutlined />}>
+                                            Sign In
+                                        </Button>
+                                    </Form.Item>
+                                </Form>
+                            </div>
+                        </div>
+                    </ConfigProvider>
+                );
+            }
+
+            const ledgerColumns = [
+                { title: t.id || 'ID', dataIndex: 'id', key: 'id', render: (text) => <Text strong>#{text}</Text> },
+                { title: t.code_merchant || 'Merchant Code', dataIndex: 'code_merchant', key: 'code_merchant', render: (text) => <Text code>{text}</Text> },
+                { title: t.merchant_name || 'Merchant Name', dataIndex: 'merchant_name', key: 'merchant_name' },
+                { title: t.amount || 'Amount', key: 'amount', render: (_, record) => <Text type="success" strong>{parseFloat(record.amount).toLocaleString()} {record.currency}</Text> },
+                {
+                    title: t.status || 'Status', key: 'status', dataIndex: 'status', render: (status) => {
+                        let color, icon;
+                        switch (status) {
+                            case 'SUCCESS': color = 'green'; icon = <CheckCircleOutlined />; break;
+                            case 'PENDING': color = 'orange'; icon = <SyncOutlined spin />; break;
+                            case 'FAILED': color = 'red'; icon = <CloseCircleOutlined />; break;
+                            case 'EXPIRED': color = 'default'; icon = <ClockCircleOutlined />; break;
+                            default: color = 'default'; icon = <ClockCircleOutlined />;
+                        }
+                        return <Tag color={color} icon={icon} style={{ minWidth: 90, textAlign: 'center' }}>{status}</Tag>;
+                    }
+                },
+                { title: t.updated || 'Updated At', dataIndex: 'updated_at', key: 'updated_at', render: (text) => formatUTC(text) }
+            ];
+
+            const merchantColumns = [
+                { title: t.code_merchant || 'Code', dataIndex: 'code_merchant', key: 'code_merchant', render: text => <Text code>{text}</Text> },
+                { title: t.name || 'Name', dataIndex: 'name', key: 'name', render: text => <Text strong>{text}</Text> },
+                { title: t.description || 'Description', dataIndex: 'description', key: 'description' },
+                {
+                    title: t.links || 'Payment Links', key: 'links', render: (_, record) => (
+                        <Space direction="vertical" size="small">
+                            <Text type="secondary" style={{ fontSize: 12 }}>KHR: <a href={record.payment_link_khr} target="_blank">Link</a></Text>
+                            <Text type="secondary" style={{ fontSize: 12 }}>USD: <a href={record.payment_link_usd} target="_blank">Link</a></Text>
+                        </Space>
+                    )
+                },
+                {
+                    title: <span>🤖 {t.merchant_telegram_chat || 'Telegram Chat'}</span>,
+                    key: 'telegram_chat_id',
+                    dataIndex: 'telegram_chat_id',
+                    render: (text, record) => {
+                        if (!text || !text.trim()) {
+                            return (
+                                <Tooltip title="Uses default Telegram Chat configured in Settings">
+                                    <Tag color="default">⚙️ Global Default</Tag>
+                                </Tooltip>
+                            );
+                        }
+                        const ids = text.split(',').map(s => s.trim()).filter(Boolean);
+                        return (
+                            <Space wrap size={[0, 4]}>
+                                {ids.map(id => (
+                                    <Tag color="success" key={id} style={{ fontFamily: 'monospace', fontWeight: 500 }}>
+                                        👥 {id}
+                                    </Tag>
+                                ))}
+                            </Space>
+                        );
+                    }
+                },
+                {
+                    title: t.actions || 'Actions', key: 'actions', render: (_, record) => (
+                        <Space>
+                            <Button type="link" onClick={() => openMerchantModal(record)}>{t.edit || 'Edit'}</Button>
+                            {botProfile && botProfile.username && (
+                                <Tooltip title={t.invite_bot_to_merchant_group || "1-Click Invite Bot to Group & Auto-Connect this Merchant"}>
+                                    <Button
+                                        type="link"
+                                        size="small"
+                                        style={{ color: '#52c41a' }}
+                                        icon={<LinkOutlined />}
+                                        onClick={() => handleInviteMerchantToTelegram(record)}
+                                    >
+                                        {t.auto_connect_btn || '🔗 Auto-Connect Group'}
+                                    </Button>
+                                </Tooltip>
+                            )}
+                        </Space>
+                    )
+                }
+            ];
+
+            const apiKeyColumns = [
+                { title: t.api_key_name || 'Name', dataIndex: 'name', key: 'name', render: text => <Text strong>{text}</Text> },
+                { title: t.api_key_desc || 'Description', dataIndex: 'description', key: 'description' },
+                {
+                    title: t.api_key_value || 'Token', dataIndex: 'key_value', key: 'key_value',
+                    render: (text, record) => (
+                        <Space>
+                            <Text copyable={{ text: text }} code>
+                                {visibleTokens[record.id] ? text : '••••••••••••••••••••••••••••••••'}
+                            </Text>
+                            <Button
+                                type="text"
+                                size="small"
+                                icon={visibleTokens[record.id] ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                                onClick={() => setVisibleTokens(prev => ({ ...prev, [record.id]: !prev[record.id] }))}
+                            />
+                        </Space>
+                    )
+                },
+                { title: t.status || 'Status', dataIndex: 'status', key: 'status', render: status => <Tag color={status === 'ACTIVE' ? 'green' : 'red'}>{status}</Tag> },
+                {
+                    title: t.actions || 'Actions', key: 'actions', render: (_, record) => (
+                        <Space size="middle">
+                            <Button type="link" onClick={() => openApiModal(record)}>{t.edit || 'Edit'}</Button>
+                            <Button type="link" danger onClick={() => handleDeleteApiKey(record.id)}>{t.delete || 'Delete'}</Button>
+                        </Space>
+                    )
+                }
+            ];
+
+            const apiLogColumns = [
+                { title: t.updated || 'Timestamp', dataIndex: 'created_at', key: 'created_at', render: (text) => formatUTC(text) },
+                {
+                    title: t.method || 'Method', dataIndex: 'method', key: 'method', render: method => {
+                        let color = method === 'GET' ? 'blue' : method === 'POST' ? 'green' : method === 'DELETE' ? 'red' : 'orange';
+                        return <Tag color={color}>{method}</Tag>;
+                    }
+                },
+                { title: t.endpoint || 'Endpoint', dataIndex: 'endpoint', key: 'endpoint', render: text => <Text code>{text}</Text> },
+                { title: t.api_key_name || 'Token', dataIndex: 'token_name', key: 'token_name', render: text => text ? <Tag color="purple">{text}</Tag> : <Text type="secondary">None</Text> },
+                { title: t.ip_address || 'IP Address', dataIndex: 'ip_address', key: 'ip_address' },
+                { title: t.country || 'Country', dataIndex: 'country', key: 'country' },
+                {
+                    title: t.action || 'Action', key: 'action', render: (_, record) => (
+                        <Button size="small" danger onClick={() => handleBanIp(record.ip_address)}>{t.ban_ip || 'Ban IP'}</Button>
+                    )
+                }
+            ];
+
+            const menuItems = [
+                { key: 'dashboard', icon: <AppstoreOutlined />, label: t.menu_dashboard || 'Dashboard' },
+                { key: 'ledger', icon: <DatabaseOutlined />, label: t.menu_ledger || 'Ledger' },
+                { key: 'merchants', icon: <ShopOutlined />, label: t.menu_merchants || 'Merchants' },
+                { key: 'create_qr', icon: <QrcodeOutlined />, label: t.menu_create_qr || 'Test QR Code' },
+                { key: 'api_docs', icon: <ApiOutlined />, label: t.menu_api_docs || 'API Docs' },
+                { key: 'settings', icon: <SettingOutlined />, label: t.menu_settings || 'Settings' },
+                { key: 'logs', icon: <LineChartOutlined />, label: t.menu_traffic || 'Traffic Logs' },
+            ];
+
+            const renderCodeSamples = () => {
+                if (selectedEndpoint === 'verify_json') {
+                    return [
+                        {
+                            key: '1', label: 'Browser (Live Test)', children: (
+                                <div>
+                                    <Typography.Text strong>Invoice ID:</Typography.Text>
+                                    <Input value={testInvoiceId} onChange={e => setTestInvoiceId(e.target.value)} style={{ marginBottom: 12, marginTop: 8 }} />
+                                    <Button type="primary" loading={isTesting} onClick={() => executeTest('verify_json')} style={{ marginBottom: 8, display: 'block' }}>Run GET Request</Button>
+                                    {testResults['verify_json'] && (
+                                        <div>
+                                            <Typography.Text strong>Response:</Typography.Text>
+                                            <pre style={{ marginTop: 8, background: '#1e1e1e', color: '#a6e22e', padding: '12px', borderRadius: '4px', overflowX: 'auto' }}><code>{JSON.stringify(testResults['verify_json'], null, 2)}</code></pre>
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        },
+                        {
+                            key: '2', label: 'Python', children: (
+                                <Typography.Paragraph copyable={{ text: `import requests\n\nurl = "${window.location.origin}/api/v1/payment/verify/12345"\nheaders = {\n    "X-API-Key": "${selectedApiToken}"\n}\n\nresponse = requests.get(url, headers=headers)\nprint(response.json())` }}>
+                                    <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`import requests
+
+url = "${window.location.origin}/api/v1/payment/verify/12345"
+headers = {
+    "X-API-Key": "${selectedApiToken}"
+}
+
+response = requests.get(url, headers=headers)
+print(response.json())`}</code></pre>
+                                </Typography.Paragraph>
+                            )
+                        },
+                        {
+                            key: '3', label: 'Node.js', children: (
+                                <Typography.Paragraph copyable={{ text: `const axios = require('axios');\n\nconst url = '${window.location.origin}/api/v1/payment/verify/12345';\nconst headers = {\n  'X-API-Key': '${selectedApiToken}'\n};\n\naxios.get(url, { headers })\n  .then(response => console.log(response.data))\n  .catch(error => console.error(error));` }}>
+                                    <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`const axios = require('axios');
+
+const url = '${window.location.origin}/api/v1/payment/verify/12345';
+const headers = {
+  'X-API-Key': '${selectedApiToken}'
+};
+
+axios.get(url, { headers })
+  .then(response => console.log(response.data))
+  .catch(error => console.error(error));`}</code></pre>
+                                </Typography.Paragraph>
+                            )
+                        },
+                        {
+                            key: '4', label: 'React.js', children: (
+                                <Typography.Paragraph copyable={{ text: `import React, { useState, useEffect } from 'react';\nimport axios from 'axios';\n\nfunction VerifyPaymentComponent({ invoiceId }) {\n  const [status, setStatus] = useState(null);\n\n  useEffect(() => {\n    const verifyPayment = async () => {\n      try {\n        const response = await axios.get(\`${window.location.origin}/api/v1/payment/verify/\${invoiceId}\`, {\n          headers: { 'X-API-Key': '${selectedApiToken}' }\n        });\n        setStatus(response.data.status);\n      } catch (error) {\n        console.error(error);\n      }\n    };\n    if (invoiceId) verifyPayment();\n  }, [invoiceId]);\n\n  return <div>Payment Status: {status}</div>;\n}` }}>
+                                    <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+
+function VerifyPaymentComponent({ invoiceId }) {
+  const [status, setStatus] = useState(null);
+
+  useEffect(() => {
+    const verifyPayment = async () => {
+      try {
+        const response = await axios.get(\`${window.location.origin}/api/v1/payment/verify/\${invoiceId}\`, {
+          headers: { 'X-API-Key': '${selectedApiToken}' }
+        });
+        setStatus(response.data.status);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    if (invoiceId) verifyPayment();
+  }, [invoiceId]);
+
+  return <div>Payment Status: {status}</div>;
+}`}</code></pre>
+                                </Typography.Paragraph>
+                            )
+                        },
+                        {
+                            key: '5', label: 'Vue.js', children: (
+                                <Typography.Paragraph copyable={{ text: `<template>\n  <div>Payment Status: {{ status }}</div>\n</template>\n\n<script>\nimport axios from 'axios';\n\nexport default {\n  data() {\n    return { status: null };\n  },\n  async mounted() {\n    try {\n      const response = await axios.get('${window.location.origin}/api/v1/payment/verify/12345', {\n        headers: { 'X-API-Key': '${selectedApiToken}' }\n      });\n      this.status = response.data.status;\n    } catch (error) {\n      console.error(error);\n    }\n  }\n}\n<\\/script>` }}>
+                                    <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`<template>
+  <div>Payment Status: {{ status }}</div>
+</template>
+
+<script>
+import axios from 'axios';
+
+export default {
+  data() {
+    return { status: null };
+  },
+  async mounted() {
+    try {
+      const response = await axios.get('${window.location.origin}/api/v1/payment/verify/12345', {
+        headers: { 'X-API-Key': '${selectedApiToken}' }
+      });
+      this.status = response.data.status;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+}
+<\\/script>`}</code></pre>
+                                </Typography.Paragraph>
+                            )
+                        },
+                        {
+                            key: '6', label: 'PHP', children: (
+                                <Typography.Paragraph copyable={{ text: `<?php\n$url = "${window.location.origin}/api/v1/payment/verify/12345";\n\n$options = array(\n    'http' => array(\n        'header'  => "X-API-Key: ${selectedApiToken}\\r\\n",\n        'method'  => 'GET'\n    )\n);\n\n$context  = stream_context_create($options);\n$result = file_get_contents($url, false, $context);\n\necho $result;\n?>` }}>
+                                    <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`<?php
+$url = "${window.location.origin}/api/v1/payment/verify/12345";
+
+$options = array(
+    'http' => array(
+        'header'  => "X-API-Key: ${selectedApiToken}\\r\\n",
+        'method'  => 'GET'
+    )
+);
+
+$context  = stream_context_create($options);
+$result = file_get_contents($url, false, $context);
+
+echo $result;
+?>`}</code></pre>
+                                </Typography.Paragraph>
+                            )
+                        }
+                    ];
+                } else if (selectedEndpoint === 'verify_html') {
+                    return [
+                        {
+                            key: '1', label: 'Browser (Live Test)', children: (
+                                <div>
+                                    <Typography.Text strong>Invoice ID:</Typography.Text>
+                                    <Input value={testInvoiceId} onChange={e => setTestInvoiceId(e.target.value)} style={{ marginBottom: 12, marginTop: 8 }} />
+                                    <Button type="primary" loading={isTesting} onClick={() => executeTest('verify_html')} style={{ marginBottom: 8, display: 'block' }}>Load HTML Iframe</Button>
+                                    {testResults['verify_html'] && (
+                                        <div style={{ marginTop: 8, padding: 16, border: '1px dashed #ccc', borderRadius: 4, background: '#fafafa', display: 'flex', justifyContent: 'center' }}>
+                                            <iframe src={`${window.location.origin}/api/v1/payment/qr-code/verify/${testInvoiceId}`} width="400" height="600" frameBorder="0"></iframe>
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        },
+                        {
+                            key: '2', label: 'React.js', children: (
+                                <Typography.Paragraph copyable={{ text: `import React from 'react';\n\nfunction PaymentFrame({ invoiceId }) {\n  return (\n    <iframe \n      src={\`${window.location.origin}/api/v1/payment/qr-code/verify/\${invoiceId}\`} \n      width="400" \n      height="600" \n      style={{ border: 'none' }}\n      title="Payment QR Code"\n    />\n  );\n}` }}>
+                                    <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`import React from 'react';
+
+function PaymentFrame({ invoiceId }) {
+  return (
+    <iframe 
+      src={\`${window.location.origin}/api/v1/payment/qr-code/verify/\${invoiceId}\`} 
+      width="400" 
+      height="600" 
+      style={{ border: 'none' }}
+      title="Payment QR Code"
+    />
+  );
+}`}</code></pre>
+                                </Typography.Paragraph>
+                            )
+                        }
+                    ];
+                }
+
+                // default to 'create'
+                return [
+                    {
+                        key: '1', label: 'Browser (Live Test)', children: (
+                            <div>
+                                <Typography.Text strong>Request Body (Editable JSON):</Typography.Text>
+                                <Input.TextArea
+                                    value={testPayload}
+                                    onChange={e => setTestPayload(e.target.value)}
+                                    rows={6}
+                                    style={{ fontFamily: 'monospace', marginTop: 8, marginBottom: 12 }}
+                                />
+                                <Button type="primary" loading={isTesting} onClick={() => executeTest('create')} style={{ marginBottom: 8, display: 'block' }}>Run POST Request</Button>
+                                {testResults['create'] && (
+                                    <div>
+                                        <Typography.Text strong>Response:</Typography.Text>
+                                        <pre style={{ marginTop: 8, background: '#1e1e1e', color: '#a6e22e', padding: '12px', borderRadius: '4px', overflowX: 'auto' }}><code>{JSON.stringify(testResults['create'], null, 2)}</code></pre>
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    },
+                    {
+                        key: '2', label: 'Python', children: (
+                            <Typography.Paragraph copyable={{ text: `import requests\n\nurl = "${window.location.origin}/api/v1/payment/create"\nheaders = {\n    "X-API-Key": "${selectedApiToken}",\n    "Content-Type": "application/json"\n}\ndata = {\n    "code_merchant": "aba_merchant_1",\n    "amount": "1.50",\n    "currency": "USD"\n}\n\nresponse = requests.post(url, headers=headers, json=data)\nprint(response.json())` }}>
+                                <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`import requests
+
+url = "${window.location.origin}/api/v1/payment/create"
+headers = {
+    "X-API-Key": "${selectedApiToken}",
+    "Content-Type": "application/json"
+}
+data = {
+    "code_merchant": "aba_merchant_1",
+    "amount": "1.50",
+    "currency": "USD"
+}
+
+response = requests.post(url, headers=headers, json=data)
+print(response.json())`}</code></pre>
+                            </Typography.Paragraph>
+                        )
+                    },
+                    {
+                        key: '3', label: 'Node.js', children: (
+                            <Typography.Paragraph copyable={{ text: `const axios = require('axios');\n\nconst url = '${window.location.origin}/api/v1/payment/create';\nconst headers = {\n  'X-API-Key': '${selectedApiToken}',\n  'Content-Type': 'application/json'\n};\nconst data = {\n  code_merchant: 'aba_merchant_1',\n  amount: '1.50',\n  currency: 'USD'\n};\n\naxios.post(url, data, { headers })\n  .then(response => console.log(response.data))\n  .catch(error => console.error(error));` }}>
+                                <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`const axios = require('axios');
+
+const url = '${window.location.origin}/api/v1/payment/create';
+const headers = {
+  'X-API-Key': '${selectedApiToken}',
+  'Content-Type': 'application/json'
+};
+const data = {
+  code_merchant: 'aba_merchant_1',
+  amount: '1.50',
+  currency: 'USD'
+};
+
+axios.post(url, data, { headers })
+  .then(response => console.log(response.data))
+  .catch(error => console.error(error));`}</code></pre>
+                            </Typography.Paragraph>
+                        )
+                    },
+                    {
+                        key: '4', label: 'React.js', children: (
+                            <Typography.Paragraph copyable={{ text: `import React, { useState } from 'react';\nimport axios from 'axios';\n\nfunction PaymentComponent() {\n  const [result, setResult] = useState(null);\n\n  const createPayment = async () => {\n    try {\n      const response = await axios.post('${window.location.origin}/api/v1/payment/create', {\n        code_merchant: 'aba_merchant_1',\n        amount: '1.50',\n        currency: 'USD'\n      }, {\n        headers: { 'X-API-Key': '${selectedApiToken}' }\n      });\n      setResult(response.data);\n    } catch (error) {\n      console.error(error);\n    }\n  };\n\n  return <button onClick={createPayment}>Pay $1.50</button>;\n}` }}>
+                                <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`import React, { useState } from 'react';
+import axios from 'axios';
+
+function PaymentComponent() {
+  const [result, setResult] = useState(null);
+
+  const createPayment = async () => {
+    try {
+      const response = await axios.post('${window.location.origin}/api/v1/payment/create', {
+        code_merchant: 'aba_merchant_1',
+        amount: '1.50',
+        currency: 'USD'
+      }, {
+        headers: { 'X-API-Key': '${selectedApiToken}' }
+      });
+      setResult(response.data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  return <button onClick={createPayment}>Pay $1.50</button>;
+}`}</code></pre>
+                            </Typography.Paragraph>
+                        )
+                    },
+                    {
+                        key: '5', label: 'Vue.js', children: (
+                            <Typography.Paragraph copyable={{ text: `<template>\n  <button @click="createPayment">Pay $1.50</button>\n</template>\n\n<script>\nimport axios from 'axios';\n\nexport default {\n  methods: {\n    async createPayment() {\n      try {\n        const response = await axios.post('${window.location.origin}/api/v1/payment/create', {\n          code_merchant: 'aba_merchant_1',\n          amount: '1.50',\n          currency: 'USD'\n        }, {\n          headers: { 'X-API-Key': '${selectedApiToken}' }\n        });\n        console.log(response.data);\n      } catch (error) {\n        console.error(error);\n      }\n    }\n  }\n}\n<\\/script>` }}>
+                                <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`<template>
+  <button @click="createPayment">Pay $1.50</button>
+</template>
+
+<script>
+import axios from 'axios';
+
+export default {
+  methods: {
+    async createPayment() {
+      try {
+        const response = await axios.post('${window.location.origin}/api/v1/payment/create', {
+          code_merchant: 'aba_merchant_1',
+          amount: '1.50',
+          currency: 'USD'
+        }, {
+          headers: { 'X-API-Key': '${selectedApiToken}' }
+        });
+        console.log(response.data);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  }
+}
+<\\/script>`}</code></pre>
+                            </Typography.Paragraph>
+                        )
+                    },
+                    {
+                        key: '6', label: 'PHP', children: (
+                            <Typography.Paragraph copyable={{ text: `<?php\n$url = "${window.location.origin}/api/v1/payment/create";\n$data = array(\n    "code_merchant" => "aba_merchant_1",\n    "amount" => "1.50",\n    "currency" => "USD"\n);\n\n$options = array(\n    'http' => array(\n        'header'  => "Content-Type: application/json\\r\\nX-API-Key: ${selectedApiToken}\\r\\n",\n        'method'  => 'POST',\n        'content' => json_encode($data)\n    )\n);\n\n$context  = stream_context_create($options);\n$result = file_get_contents($url, false, $context);\n\necho $result;\n?>` }}>
+                                <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', margin: 0 }}><code>{`<?php
+$url = "${window.location.origin}/api/v1/payment/create";
+$data = array(
+    "code_merchant" => "aba_merchant_1",
+    "amount" => "1.50",
+    "currency" => "USD"
+);
+
+$options = array(
+    'http' => array(
+        'header'  => "Content-Type: application/json\\r\\nX-API-Key: ${selectedApiToken}\\r\\n",
+        'method'  => 'POST',
+        'content' => json_encode($data)
+    )
+);
+
+$context  = stream_context_create($options);
+$result = file_get_contents($url, false, $context);
+
+echo $result;
+?>`}</code></pre>
+                            </Typography.Paragraph>
+                        )
+                    }
+                ];
+            };
+
+            return (
+                <ConfigProvider theme={{
+                    algorithm: themeMode === 'dark' ? antd.theme.darkAlgorithm : antd.theme.defaultAlgorithm,
+                    token: {
+                        fontFamily: "'Kantumruy Pro', sans-serif",
+                        colorPrimary: primaryColor,
+                        ...(themeMode === 'glass' ? {
+                            colorBgContainer: 'rgba(255,255,255,0.25)',
+                            colorBgElevated: 'rgba(255,255,255,0.3)',
+                            colorText: '#111'
+                        } : {})
+                    }
+                }}>
+                    <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
+
+                        <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: themeMode === 'dark' ? '#141414' : (themeMode === 'glass' ? 'rgba(255,255,255,0.1)' : '#ffffff'), padding: '0 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', zIndex: 2 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ minWidth: 32, width: 32, height: 32, background: `linear-gradient(45deg, ${primaryColor}, #52c41a)`, borderRadius: 8, display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#fff', fontWeight: 'bold' }}>P</div>
+                                <Title level={4} style={{ margin: 0, fontSize: 'clamp(16px, 4vw, 20px)' }}>{t.title || 'PayWay Engine'}</Title>
+                                <Tag color="blue" style={{ borderRadius: 8 }}>Fintech v3</Tag>
+                            </div>
+                            <Space size="small">
+                                <Button 
+                                    size="small" 
+                                    type="default" 
+                                    style={{ borderRadius: 8 }}
+                                    onClick={() => window.location.href='/'}
+                                >
+                                    ⚡ UI v1
+                                </Button>
+                                <Button 
+                                    size="small" 
+                                    type="default" 
+                                    style={{ borderRadius: 8 }}
+                                    onClick={() => window.location.href='/ui/2'}
+                                >
+                                    ✨ UI v2
+                                </Button>
+                                <input
+                                    type="color"
+                                    value={primaryColor}
+                                    onChange={(e) => setPrimaryColor(e.target.value)}
+                                    style={{ border: 'none', padding: 0, width: 28, height: 28, borderRadius: '50%', cursor: 'pointer', background: 'transparent', flexShrink: 0 }}
+                                    title="Theme Color"
+                                />
+                                <Select
+                                    value={themeMode}
+                                    onChange={setThemeMode}
+                                    options={[
+                                        { value: 'light', label: 'Light' },
+                                        { value: 'dark', label: 'Dark' },
+                                        { value: 'glass', label: 'Glass' }
+                                    ]}
+                                    style={{ width: 85 }}
+                                />
+                                <Tag className="desktop-only" color="blue" icon={<SyncOutlined spin />}>{t.live_system || 'Live'}</Tag>
+                                <Select
+                                    value={lang}
+                                    onChange={setLang}
+                                    options={[
+                                        { value: 'en', label: 'EN' },
+                                        { value: 'km', label: 'KM' }
+                                    ]}
+                                    style={{ width: 70 }}
+                                    suffixIcon={<GlobalOutlined />}
+                                />
+                                <Button type="text" icon={<LogoutOutlined />} onClick={handleLogout} />
+                            </Space>
+                        </Header>
+
+                        <Layout>
+                            <Sider
+                                width={236}
+                                style={{ background: themeMode === 'dark' ? '#141414' : (themeMode === 'glass' ? 'rgba(255,255,255,0.1)' : '#ffffff') }}
+                                className="desktop-only"
+                            >
+                                <Menu
+                                    mode="inline"
+                                    selectedKeys={[currentView]}
+                                    style={{ height: '100%', borderRight: 0 }}
+                                    items={menuItems}
+                                    onClick={(e) => setCurrentView(e.key)}
+                                />
+                            </Sider>
+                            <Content className="mobile-padding" style={{ padding: '24px', margin: 0, minHeight: 280, overflowX: 'hidden' }}>
+
+                                {currentView === 'dashboard' && (
+                                    <div>
+                                        {/* Top Live Status Control Bar */}
+                                        <Card
+                                            bordered={false}
+                                            style={{
+                                                marginBottom: 20,
+                                                borderRadius: 14,
+                                                boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+                                                background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(255,255,255,0.2)' : '#ffffff')
+                                            }}
+                                        >
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <span className="live-dot" style={{ backgroundColor: liveAutoRefresh ? '#52c41a' : '#fa8c16' }}></span>
+                                                    <Text strong style={{ fontSize: 16 }}>
+                                                        {t.live_system || "Live System & Resources Monitoring"}
+                                                    </Text>
+                                                    <Tag color={dashboardData.system_metrics?.browser?.is_running ? "green" : "orange"} icon={<GlobalOutlined />}>
+                                                        {dashboardData.system_metrics?.browser?.is_running ? (t.engine_online || "Chromium Online") : (t.engine_offline || "Engine Offline")}
+                                                    </Tag>
+                                                    {dashboardData.system_metrics?.browser?.active_contexts > 0 && (
+                                                        <Badge count={`${dashboardData.system_metrics.browser.active_contexts} Active Task(s)`} style={{ backgroundColor: '#1677ff' }} />
+                                                    )}
+                                                </div>
+                                                <Space size="middle">
+                                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                                        {t.last_sync || "Last Synced"}: <b>{lastSyncedTime}</b>
+                                                    </Text>
+                                                    <Switch
+                                                        checked={liveAutoRefresh}
+                                                        onChange={setLiveAutoRefresh}
+                                                        checkedChildren={t.auto_refresh || "Live (2.5s)"}
+                                                        unCheckedChildren="Paused"
+                                                    />
+                                                    <Button
+                                                        icon={<ReloadOutlined spin={loading} />}
+                                                        onClick={fetchDashboard}
+                                                        size="middle"
+                                                        type="primary"
+                                                        ghost
+                                                    >
+                                                        {t.refresh || "Refresh"}
+                                                    </Button>
+                                                </Space>
+                                            </div>
+                                        </Card>
+
+                                        {/* Section 1: Real-time Host Resource Usage (CPU, RAM, Storage, Browser) */}
+                                        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                                            {/* CPU Usage Card */}
+                                            <Col xs={24} sm={12} lg={6}>
+                                                <Card bordered={false} className="metric-card-hover" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                                                        <div>
+                                                            <Text type="secondary" style={{ fontSize: 13 }}>{t.cpu_usage || "CPU Load"}</Text>
+                                                            <div style={{ fontSize: 26, fontWeight: 'bold', marginTop: 4, color: (dashboardData.system_metrics?.cpu?.percent || 0) > 80 ? '#f5222d' : 'inherit' }}>
+                                                                {dashboardData.system_metrics?.cpu?.percent ?? 0}%
+                                                            </div>
+                                                        </div>
+                                                        <div className="icon-wrapper-circle" style={{ background: 'rgba(250, 140, 22, 0.12)', color: '#fa8c16' }}>
+                                                            <ThunderboltOutlined />
+                                                        </div>
+                                                    </div>
+                                                    <Progress
+                                                        percent={dashboardData.system_metrics?.cpu?.percent || 0}
+                                                        showInfo={false}
+                                                        strokeColor={(dashboardData.system_metrics?.cpu?.percent || 0) > 80 ? '#f5222d' : ((dashboardData.system_metrics?.cpu?.percent || 0) > 60 ? '#fa8c16' : '#52c41a')}
+                                                        size="small"
+                                                    />
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 12, color: '#888' }}>
+                                                        <span><DashboardOutlined /> {dashboardData.system_metrics?.cpu?.cores || 1} {t.cores || "Cores"}</span>
+                                                        <span>Host Active</span>
+                                                    </div>
+                                                </Card>
+                                            </Col>
+
+                                            {/* RAM Memory Card */}
+                                            <Col xs={24} sm={12} lg={6}>
+                                                <Card bordered={false} className="metric-card-hover" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                                                        <div>
+                                                            <Text type="secondary" style={{ fontSize: 13 }}>{t.ram_usage || "Memory (RAM)"}</Text>
+                                                            <div style={{ fontSize: 26, fontWeight: 'bold', marginTop: 4 }}>
+                                                                {dashboardData.system_metrics?.ram?.percent ?? 0}%
+                                                            </div>
+                                                        </div>
+                                                        <div className="icon-wrapper-circle" style={{ background: 'rgba(22, 119, 255, 0.12)', color: '#1677ff' }}>
+                                                            <CloudServerOutlined />
+                                                        </div>
+                                                    </div>
+                                                    <Progress
+                                                        percent={dashboardData.system_metrics?.ram?.percent || 0}
+                                                        showInfo={false}
+                                                        strokeColor={(dashboardData.system_metrics?.ram?.percent || 0) > 85 ? '#f5222d' : '#1677ff'}
+                                                        size="small"
+                                                    />
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 12, color: '#888' }}>
+                                                        <span>{t.used || "Used"}: <b>{dashboardData.system_metrics?.ram?.used_gb ?? 0} GB</b></span>
+                                                        <span>{t.free || "Free"}: {dashboardData.system_metrics?.ram?.free_gb ?? 0} GB</span>
+                                                    </div>
+                                                </Card>
+                                            </Col>
+
+                                            {/* Storage Disk Card */}
+                                            <Col xs={24} sm={12} lg={6}>
+                                                <Card bordered={false} className="metric-card-hover" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                                                        <div>
+                                                            <Text type="secondary" style={{ fontSize: 13 }}>{t.storage_usage || "Disk Storage"}</Text>
+                                                            <div style={{ fontSize: 26, fontWeight: 'bold', marginTop: 4 }}>
+                                                                {dashboardData.system_metrics?.storage?.percent ?? 0}%
+                                                            </div>
+                                                        </div>
+                                                        <div className="icon-wrapper-circle" style={{ background: 'rgba(114, 46, 209, 0.12)', color: '#722ed1' }}>
+                                                            <HddOutlined />
+                                                        </div>
+                                                    </div>
+                                                    <Progress
+                                                        percent={dashboardData.system_metrics?.storage?.percent || 0}
+                                                        showInfo={false}
+                                                        strokeColor="#722ed1"
+                                                        size="small"
+                                                    />
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 12, color: '#888' }}>
+                                                        <span>{t.used || "Used"}: <b>{dashboardData.system_metrics?.storage?.used_gb ?? 0} GB</b></span>
+                                                        <span>{t.free || "Free"}: {dashboardData.system_metrics?.storage?.free_gb ?? 0} GB</span>
+                                                    </div>
+                                                </Card>
+                                            </Col>
+
+                                            {/* Automation Engine & Active Tasks Card */}
+                                            <Col xs={24} sm={12} lg={6}>
+                                                <Card bordered={false} className="metric-card-hover" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                                                        <div>
+                                                            <Text type="secondary" style={{ fontSize: 13 }}>{t.browser_engine || "Chromium Engine"}</Text>
+                                                            <div style={{ fontSize: 20, fontWeight: 'bold', marginTop: 4, color: dashboardData.system_metrics?.browser?.is_running ? '#52c41a' : '#fa8c16' }}>
+                                                                {dashboardData.system_metrics?.browser?.is_running ? "Singleton Ready" : "Standby"}
+                                                            </div>
+                                                        </div>
+                                                        <div className="icon-wrapper-circle" style={{ background: 'rgba(82, 196, 26, 0.12)', color: '#52c41a' }}>
+                                                            <GlobalOutlined />
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ background: themeMode === 'dark' ? '#141414' : '#fafafa', padding: '6px 10px', borderRadius: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <span style={{ fontSize: 12 }}>{t.active_contexts || "Active Tasks"}:</span>
+                                                        <Tag color={dashboardData.system_metrics?.browser?.active_contexts > 0 ? "processing" : "default"}>
+                                                            {dashboardData.system_metrics?.browser?.active_contexts ?? 0} running
+                                                        </Tag>
+                                                    </div>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 12, color: '#888' }}>
+                                                        <span>{t.process_ram || "Engine RAM"}: <b>{dashboardData.system_metrics?.process?.memory_mb ?? 0} MB</b></span>
+                                                        <span>Low-Overhead</span>
+                                                    </div>
+                                                </Card>
+                                            </Col>
+                                        </Row>
+
+                                        {/* Section 2: Order & Revenue Statistics */}
+                                        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                                            <Col xs={24} sm={12} md={6}>
+                                                <Card bordered={false} className="metric-card-hover" style={{ boxShadow: '0 1px 2px -2px rgba(0,0,0,0.16)' }}>
+                                                    <Statistic title={t.total_orders || "Total Orders"} value={dashboardData.total_orders} prefix={<DatabaseOutlined style={{ color: '#1677ff' }} />} />
+                                                </Card>
+                                            </Col>
+                                            <Col xs={24} sm={12} md={6}>
+                                                <Card bordered={false} className="metric-card-hover" style={{ boxShadow: '0 1px 2px -2px rgba(0,0,0,0.16)' }}>
+                                                    <Statistic title={t.success_orders || "Success Orders"} value={dashboardData.success_orders} valueStyle={{ color: '#3f8600' }} prefix={<CheckCircleOutlined />} />
+                                                </Card>
+                                            </Col>
+                                            <Col xs={24} sm={12} md={6}>
+                                                <Card bordered={false} className="metric-card-hover" style={{ boxShadow: '0 1px 2px -2px rgba(0,0,0,0.16)' }}>
+                                                    <Statistic title={t.revenue_usd || "Revenue (USD)"} value={dashboardData.total_revenue_usd} precision={2} prefix="$" valueStyle={{ color: '#1677ff' }} />
+                                                </Card>
+                                            </Col>
+                                            <Col xs={24} sm={12} md={6}>
+                                                <Card bordered={false} className="metric-card-hover" style={{ boxShadow: '0 1px 2px -2px rgba(0,0,0,0.16)' }}>
+                                                    <Statistic title={t.revenue_khr || "Revenue (KHR)"} value={dashboardData.total_revenue_khr} prefix="៛" valueStyle={{ color: '#ed1116' }} />
+                                                </Card>
+                                            </Col>
+                                        </Row>
+
+                                        {/* Section 3: Real-Time Tasks & Live Automation Table */}
+                                        <Card
+                                            title={
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <SyncOutlined spin={liveAutoRefresh} style={{ color: '#1677ff', fontSize: 18 }} />
+                                                        <span style={{ fontWeight: 'bold', fontSize: 16 }}>{t.realtime_tasks || "Real-Time Automation Tasks & Transactions"}</span>
+                                                        <Tag color="cyan">{(dashboardData.recent_tasks || []).length} Latest</Tag>
+                                                    </div>
+                                                    <Space size="small">
+                                                        <Select
+                                                            value={taskStatusFilter}
+                                                            onChange={setTaskStatusFilter}
+                                                            style={{ width: 130 }}
+                                                            size="small"
+                                                            options={[
+                                                                { value: 'ALL', label: 'All Status' },
+                                                                { value: 'PENDING', label: 'Processing' },
+                                                                { value: 'SUCCESS', label: 'Success' },
+                                                                { value: 'EXPIRED', label: 'Expired' },
+                                                                { value: 'FAILED', label: 'Failed' }
+                                                            ]}
+                                                        />
+                                                        <Input.Search
+                                                            placeholder="Search Task / Merchant..."
+                                                            value={taskSearchText}
+                                                            onChange={(e) => setTaskSearchText(e.target.value)}
+                                                            style={{ width: 180 }}
+                                                            size="small"
+                                                            allowClear
+                                                        />
+                                                    </Space>
+                                                </div>
+                                            }
+                                            bordered={false}
+                                            style={{ marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', borderRadius: 12 }}
+                                        >
+                                            <Table
+                                                dataSource={(dashboardData.recent_tasks || []).filter(task => {
+                                                    if (taskStatusFilter !== 'ALL' && task.status !== taskStatusFilter) return false;
+                                                    if (taskSearchText) {
+                                                        const query = taskSearchText.toLowerCase();
+                                                        return (
+                                                            String(task.id).includes(query) ||
+                                                            (task.merchant_name && task.merchant_name.toLowerCase().includes(query)) ||
+                                                            (task.code_merchant && task.code_merchant.toLowerCase().includes(query)) ||
+                                                            (task.tran_id && task.tran_id.toLowerCase().includes(query))
+                                                        );
+                                                    }
+                                                    return true;
+                                                })}
+                                                rowKey="id"
+                                                pagination={{ pageSize: 8, showSizeChanger: false }}
+                                                size="middle"
+                                                columns={[
+                                                    {
+                                                        title: t.task_id || "Task ID",
+                                                        dataIndex: 'id',
+                                                        key: 'id',
+                                                        width: 100,
+                                                        render: (id) => <Tag color="blue" style={{ fontWeight: 600 }}>#{id}</Tag>
+                                                    },
+                                                    {
+                                                        title: t.status || "Status",
+                                                        dataIndex: 'status',
+                                                        key: 'status',
+                                                        width: 140,
+                                                        render: (status) => {
+                                                            if (status === 'PENDING') {
+                                                                return <Tag icon={<SyncOutlined spin />} color="processing">{t.pending || "PROCESSING"}</Tag>;
+                                                            } else if (status === 'SUCCESS') {
+                                                                return <Tag icon={<CheckCircleOutlined />} color="success">{t.success_tag || "SUCCESS"}</Tag>;
+                                                            } else if (status === 'EXPIRED') {
+                                                                return <Tag icon={<ClockCircleOutlined />} color="warning">{t.expired_tag || "EXPIRED"}</Tag>;
+                                                            } else {
+                                                                return <Tag icon={<CloseCircleOutlined />} color="error">{t.failed_tag || "FAILED"}</Tag>;
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        title: t.merchant || "Merchant",
+                                                        key: 'merchant',
+                                                        render: (_, r) => (
+                                                            <div>
+                                                                <Text strong>{r.merchant_name || 'KHQR Merchant'}</Text>
+                                                                <div style={{ fontSize: 11, color: '#888' }}>{r.code_merchant}</div>
+                                                            </div>
+                                                        )
+                                                    },
+                                                    {
+                                                        title: t.amount || "Amount",
+                                                        key: 'amount',
+                                                        render: (_, r) => (
+                                                            <div>
+                                                                <Text strong style={{ fontSize: 15 }}>
+                                                                    {parseFloat(r.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                </Text>
+                                                                <Tag color={r.currency === 'USD' ? 'blue' : 'red'} style={{ marginLeft: 6, fontSize: 11 }}>
+                                                                    {r.currency}
+                                                                </Tag>
+                                                            </div>
+                                                        )
+                                                    },
+                                                    {
+                                                        title: t.tran_id || "Transaction ID",
+                                                        dataIndex: 'tran_id',
+                                                        key: 'tran_id',
+                                                        render: (tran_id) => tran_id ? <Text copyable={{ text: tran_id }} code>{tran_id}</Text> : <Text type="secondary">-</Text>
+                                                    },
+                                                    {
+                                                        title: t.updated || "Time",
+                                                        dataIndex: 'updated_at',
+                                                        key: 'updated_at',
+                                                        render: (d) => <Text style={{ fontSize: 12 }}>{formatUTC(d)}</Text>
+                                                    },
+                                                    {
+                                                        title: t.action || "Action",
+                                                        key: 'action',
+                                                        width: 120,
+                                                        render: (_, r) => (
+                                                            <Space>
+                                                                {r.receipt_link ? (
+                                                                    <Button
+                                                                        type="link"
+                                                                        icon={<LinkOutlined />}
+                                                                        size="small"
+                                                                        href={r.receipt_link}
+                                                                        target="_blank"
+                                                                    >
+                                                                        {t.view_receipt || "Receipt"}
+                                                                    </Button>
+                                                                ) : (
+                                                                    <Button
+                                                                        type="text"
+                                                                        size="small"
+                                                                        icon={<EyeOutlined />}
+                                                                        onClick={() => {
+                                                                            setTestInvoiceId(String(r.id));
+                                                                            setCurrentView('tester');
+                                                                        }}
+                                                                    >
+                                                                        Verify
+                                                                    </Button>
+                                                                )}
+                                                            </Space>
+                                                        )
+                                                    }
+                                                ]}
+                                            />
+                                        </Card>
+
+                                        {/* Section 4: 7-Day Trend Chart & System Info */}
+                                        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                                            <Col xs={24} md={16}>
+                                                <Card title={
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <span>{t.trend_7d || "7-Day Transaction Trend"}</span>
+                                                        {dashboardData.trend && dashboardData.trend.length > 0 && (
+                                                            <span style={{ fontSize: 14, fontWeight: 'normal', color: '#888' }}>
+                                                                <span style={{ color: '#1677ff', fontWeight: 500 }}>{dashboardData.trend.reduce((sum, d) => sum + d.total, 0)}</span> Total &bull; <span style={{ color: '#3caf47', fontWeight: 500 }}>${dashboardData.trend.reduce((sum, d) => sum + (d.amount_usd || 0), 0).toLocaleString()}</span> &bull; <span style={{ color: '#ed1116', fontWeight: 500 }}>{dashboardData.trend.reduce((sum, d) => sum + (d.amount_khr || 0), 0).toLocaleString()} ៛</span>
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                } bordered={false} style={{ boxShadow: '0 1px 2px -2px rgba(0,0,0,0.16)' }}>
+                                                    <div style={{ display: 'flex', height: 300, alignItems: 'flex-end', justifyContent: 'space-around', paddingTop: 20 }}>
+                                                        {dashboardData.trend.map((day, idx) => {
+                                                            const maxTotal = Math.max(...dashboardData.trend.map(d => d.total), 1);
+                                                            const heightTotal = (day.total / maxTotal) * 100;
+                                                            const heightSuccess = (day.success / maxTotal) * 100;
+
+                                                            return (
+                                                                <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '12%' }}>
+                                                                    <div style={{ position: 'relative', height: 250, width: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), borderRadius: 4 }}>
+                                                                        <div style={{ position: 'absolute', bottom: 0, width: '100%', height: `${heightTotal}%`, backgroundColor: '#1677ff', borderRadius: '4px 4px 0 0', opacity: 0.3, transition: 'height 0.3s' }} title={`Total: ${day.total}`} />
+                                                                        <div style={{ position: 'absolute', bottom: 0, width: '100%', height: `${heightSuccess}%`, backgroundColor: '#52c41a', borderRadius: '4px 4px 0 0', transition: 'height 0.3s' }} title={`Success: ${day.success}`} />
+                                                                    </div>
+                                                                    <Text style={{ marginTop: 8, fontSize: 12 }}>{day.date.substring(5)}</Text>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </Card>
+                                            </Col>
+                                            <Col xs={24} md={8}>
+                                                <Card title={t.system_metrics || "System Metrics"} bordered={false} style={{ boxShadow: '0 1px 2px -2px rgba(0,0,0,0.16)', height: '100%' }}>
+                                                    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                                                        <Statistic title={t.active_merchants || "Active Merchants"} value={dashboardData.active_merchants} prefix={<ShopOutlined />} />
+                                                        <Statistic title={t.active_api_keys || "Active API Keys"} value={dashboardData.active_api_keys} prefix={<LockOutlined />} />
+                                                    </Space>
+                                                </Card>
+                                            </Col>
+                                        </Row>
+                                    </div>
+                                )}
+
+                                {currentView === 'create_qr' && (
+                                    <Card title={t.test_qr_title || "Test Create QR Code"} bordered={false} style={{ boxShadow: '0 1px 2px -2px rgba(0, 0, 0, 0.16)' }}>
+                                        <Row gutter={24}>
+                                            <Col xs={24} md={12}>
+                                                <Form layout="vertical" onFinish={(values) => {
+                                                    setLoading(true);
+                                                    setQrResult(null);
+                                                    setActiveApiKey(values.api_key);
+                                                    fetch('/api/v1/payment/create', {
+                                                        method: 'POST',
+                                                        headers: {
+                                                            'Content-Type': 'application/json',
+                                                            'X-API-Key': values.api_key
+                                                        },
+                                                        body: JSON.stringify({
+                                                            amount: values.amount,
+                                                            currency: values.currency,
+                                                            code_merchant: values.code_merchant
+                                                        })
+                                                    })
+                                                        .then(res => res.json())
+                                                        .then(json => {
+                                                            setLoading(false);
+                                                            if (json.detail) {
+                                                                message.error(json.detail);
+                                                            } else {
+                                                                message.success('Payment context created successfully');
+                                                                setQrResult(json.invoice_id);
+                                                                setCountdown(120);
+                                                            }
+                                                        })
+                                                        .catch(err => {
+                                                            setLoading(false);
+                                                            message.error('Failed to create payment');
+                                                        });
+                                                }}>
+                                                    <Form.Item label="Select Merchant" name="code_merchant" rules={[{ required: true, message: 'Please select a merchant' }]}>
+                                                        <Select placeholder="Select active merchant">
+                                                            {(data.merchants || []).filter(m => m.status === 'ACTIVE').map(m => (
+                                                                <Select.Option key={m.code_merchant} value={m.code_merchant}>{m.name} ({m.code_merchant})</Select.Option>
+                                                            ))}
+                                                        </Select>
+                                                    </Form.Item>
+                                                    <Form.Item label="Currency" name="currency" initialValue="USD" rules={[{ required: true }]}>
+                                                        <Select>
+                                                            <Select.Option value="USD">USD</Select.Option>
+                                                            <Select.Option value="KHR">KHR</Select.Option>
+                                                        </Select>
+                                                    </Form.Item>
+                                                    <Form.Item label="Amount" name="amount" rules={[{ required: true, message: 'Please enter an amount' }]}>
+                                                        <Input type="number" step="0.01" min="0.01" placeholder="0.00" />
+                                                    </Form.Item>
+                                                    <Form.Item label="API Key to use" name="api_key" rules={[{ required: true, message: 'Please select an API Key' }]}>
+                                                        <Select placeholder="Select API Key">
+                                                            {(data.api_keys || []).filter(k => k.status === 'ACTIVE').map(k => (
+                                                                <Select.Option key={k.key_value} value={k.key_value}>{k.name}</Select.Option>
+                                                            ))}
+                                                        </Select>
+                                                    </Form.Item>
+                                                    <Button type="primary" htmlType="submit" loading={loading} block size="large">Generate QR Code</Button>
+                                                </Form>
+                                            </Col>
+                                            <Col xs={24} md={12}>
+                                                <div style={{ textAlign: 'center', marginTop: window.innerWidth < 768 ? 40 : 0 }}>
+                                                    <Title level={4}>
+                                                        QR Preview Simulator
+                                                        {countdown !== null && countdown > 0 && (
+                                                            <span style={{ fontSize: 16, color: '#ff4d4f', marginLeft: 10 }}>
+                                                                (Expires in {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')})
+                                                            </span>
+                                                        )}
+                                                    </Title>
+                                                    {qrResult ? (
+                                                        <>
+                                                            <iframe
+                                                                id="qr-iframe"
+                                                                src={`/api/v1/payment/qr-code/verify/${qrResult}`}
+                                                                style={{ width: '100%', height: '480px', border: '1px solid #e8e8e8', background: '#fcfcfc', borderRadius: 12, boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.04)' }}
+                                                            ></iframe>
+                                                            <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center', gap: 12 }}>
+                                                                <Button type="dashed" href={`/api/v1/payment/qr-code/verify/${qrResult}`} target="_blank" icon={<EyeOutlined />}>
+                                                                    Open in New Tab
+                                                                </Button>
+                                                                <Button type="primary" icon={<SyncOutlined />} onClick={() => {
+                                                                    if (!activeApiKey) return;
+                                                                    fetch(`/api/v1/payment/verify/${qrResult}`, {
+                                                                        headers: { 'X-API-Key': activeApiKey }
+                                                                    })
+                                                                        .then(res => res.json())
+                                                                        .then(data => {
+                                                                            if (data.status) {
+                                                                                if (data.status === 'SUCCESS') {
+                                                                                    setCountdown(null);
+                                                                                    message.success(`Payment Verified! Amount: ${data.amount} ${data.currency}`);
+                                                                                    const iframe = document.getElementById('qr-iframe');
+                                                                                    if (iframe) iframe.src = iframe.src;
+                                                                                } else {
+                                                                                    if (data.status === 'EXPIRED' || data.status === 'FAILED') {
+                                                                                        setCountdown(null);
+                                                                                        const iframe = document.getElementById('qr-iframe');
+                                                                                        if (iframe) iframe.src = iframe.src;
+                                                                                    }
+                                                                                    message.info(`Payment status: ${data.status}`);
+                                                                                }
+                                                                            } else {
+                                                                                message.error(data.detail || 'Verification failed');
+                                                                            }
+                                                                        })
+                                                                        .catch(() => message.error('Failed to verify payment'));
+                                                                }}>
+                                                                    Check Payment Status
+                                                                </Button>
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <div style={{ height: '480px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: '#fafafa', borderRadius: 12, border: '1px dashed #d9d9d9', padding: 20 }}>
+                                                            <QrcodeOutlined style={{ fontSize: 64, color: '#bfbfbf', marginBottom: 16 }} />
+                                                            <Text type="secondary" style={{ textAlign: 'center' }}>Fill the form and submit to test the API and preview the generated QR code.</Text>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </Col>
+                                        </Row>
+                                    </Card>
+                                )}
+
+                                {currentView === 'ledger' && (
+                                    <div>
+                                        <Card bordered={false} style={{ marginBottom: 16, boxShadow: '0 1px 2px -2px rgba(0, 0, 0, 0.16)' }}>
+                                            <Space wrap>
+                                                <Input placeholder={t.search || 'Search...'} value={ledgerFilters.search} onChange={e => setLedgerFilters({ ...ledgerFilters, search: e.target.value })} style={{ width: 200 }} onPressEnter={fetchLedger} />
+                                                <Select value={ledgerFilters.status} onChange={v => setLedgerFilters({ ...ledgerFilters, status: v })} style={{ width: 120 }}>
+                                                    <Select.Option value="ALL">ALL</Select.Option>
+                                                    <Select.Option value="PENDING">PENDING</Select.Option>
+                                                    <Select.Option value="SUCCESS">SUCCESS</Select.Option>
+                                                    <Select.Option value="FAILED">FAILED</Select.Option>
+                                                    <Select.Option value="EXPIRED">EXPIRED</Select.Option>
+                                                </Select>
+                                                <Select value={ledgerFilters.merchant_name} onChange={v => setLedgerFilters({ ...ledgerFilters, merchant_name: v })} style={{ width: 180 }}>
+                                                    <Select.Option value="ALL">{t.merchant_name || 'Merchant Name'}</Select.Option>
+                                                    {availableMerchants.map(m => <Select.Option key={m} value={m}>{m}</Select.Option>)}
+                                                </Select>
+                                                <DatePicker.RangePicker
+                                                    onChange={(dates) => {
+                                                        if (dates) {
+                                                            setLedgerFilters({ ...ledgerFilters, start_date: dates[0].toISOString(), end_date: dates[1].toISOString() });
+                                                        } else {
+                                                            setLedgerFilters({ ...ledgerFilters, start_date: '', end_date: '' });
+                                                        }
+                                                    }}
+                                                />
+                                                <Button type="primary" onClick={fetchLedger}>{t.apply_filters || 'Apply'}</Button>
+                                                <Button onClick={() => setLedgerFilters({ start_date: '', end_date: '', status: 'ALL', merchant_name: 'ALL', search: '' })}>{t.clear_filters || 'Clear'}</Button>
+                                            </Space>
+                                        </Card>
+
+                                        <Card
+                                            title={
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                                                    <span>{t.ledger_title || 'Recent Transactions'}</span>
+                                                    {data.orders && data.orders.length > 0 && (
+                                                        <span style={{ fontSize: 14, fontWeight: 'normal', color: '#888' }}>
+                                                            <span style={{ color: '#1677ff', fontWeight: 500 }}>{data.orders.length}</span> Total &bull; <span style={{ color: '#3caf47', fontWeight: 500 }}>${data.orders.filter(o => o.currency === 'USD' && o.status === 'SUCCESS').reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0).toLocaleString()}</span> &bull; <span style={{ color: '#ed1116', fontWeight: 500 }}>{data.orders.filter(o => o.currency === 'KHR' && o.status === 'SUCCESS').reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0).toLocaleString()} ៛</span>
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            }
+                                            bordered={false}
+                                            style={{ boxShadow: '0 1px 2px -2px rgba(0, 0, 0, 0.16)' }}
+                                            extra={
+                                                <Space>
+                                                    <Button onClick={exportToExcel} icon={<DownloadOutlined />}>Excel</Button>
+                                                    <Button onClick={exportToPDF} icon={<DownloadOutlined />}>PDF</Button>
+                                                    <Button type="text" onClick={fetchLedger}>{t.refresh || 'Refresh'}</Button>
+                                                </Space>
+                                            }
+                                        >
+                                            <Table dataSource={data.orders} columns={ledgerColumns} rowKey="id" loading={loading} pagination={{ pageSize: 10 }} scroll={{ x: 800 }} />
+                                        </Card>
+                                    </div>
+                                )}
+
+                                {currentView === 'merchants' && (
+                                    <Card
+                                        title={t.merchants_list || 'Merchants List'}
+                                        bordered={false}
+                                        style={{ boxShadow: '0 1px 2px -2px rgba(0, 0, 0, 0.16)' }}
+                                        extra={
+                                            <Space>
+                                                <Button type="text" onClick={fetchData}>{t.refresh || 'Refresh'}</Button>
+                                                <Button type="primary" icon={<PlusOutlined />} onClick={() => openMerchantModal()}>
+                                                    {t.add_merchant || 'Add Merchant'}
+                                                </Button>
+                                            </Space>
+                                        }
+                                    >
+                                        <Table dataSource={data.merchants} columns={merchantColumns} rowKey="code_merchant" loading={loading} pagination={{ pageSize: 10 }} scroll={{ x: 800 }} />
+                                    </Card>
+                                )}
+
+                                {currentView === 'settings' && (
+                                    <Space direction="vertical" size="large" style={{ display: 'flex' }}>
+                                        <Card
+                                            title={t.system_info || 'System Information'}
+                                            bordered={false}
+                                            style={{ boxShadow: '0 1px 2px -2px rgba(0, 0, 0, 0.16)' }}
+                                        >
+                                            <Statistic title={t.db_storage_size || 'Database Storage Size'} value={formatBytes(settings.db_size_bytes)} />
+                                        </Card>
+
+                                        {/* Telegram Bot Notification Settings Card */}
+                                        <Card
+                                            title={
+                                                <Space>
+                                                    <span style={{ fontSize: '20px' }}>🤖</span>
+                                                    <span>{t.telegram_alert_title || 'Telegram Notification Alerts'}</span>
+                                                    {settings.telegram_enabled && (
+                                                        <Tag color="success">ACTIVE / បើកដំណើរការ</Tag>
+                                                    )}
+                                                </Space>
+                                            }
+                                            bordered={false}
+                                            style={{ boxShadow: '0 1px 2px -2px rgba(0, 0, 0, 0.16)' }}
+                                            extra={
+                                                <Space>
+                                                    <span style={{ fontSize: '13px', color: '#666' }}>{t.telegram_enabled_label || 'Enable Telegram Alerts'}:</span>
+                                                    <Switch
+                                                        checked={!!settings.telegram_enabled}
+                                                        onChange={(checked) => setSettings({ ...settings, telegram_enabled: checked })}
+                                                        checkedChildren="ON"
+                                                        unCheckedChildren="OFF"
+                                                    />
+                                                </Space>
+                                            }
+                                        >
+                                            <Form layout="vertical">
+                                                <Form.Item
+                                                    label={<b>{t.telegram_bot_token || 'Telegram Bot Token'}</b>}
+                                                    extra={
+                                                        <div style={{ marginTop: 4, color: '#666', fontSize: '12px' }}>
+                                                            💡 {t.telegram_bot_hint || 'Create a bot via @BotFather on Telegram, paste your token, then add the bot to your group or chat.'}
+                                                        </div>
+                                                    }
+                                                >
+                                                    <Input.Password
+                                                        value={settings.telegram_bot_token}
+                                                        onChange={(e) => setSettings({ ...settings, telegram_bot_token: e.target.value })}
+                                                        placeholder={t.telegram_bot_token_placeholder || "123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"}
+                                                        style={{ fontFamily: 'monospace' }}
+                                                        addonAfter={
+                                                            <Button
+                                                                type="primary"
+                                                                size="small"
+                                                                loading={fetchingChats}
+                                                                onClick={handleFetchTelegramChats}
+                                                                icon={<SearchOutlined />}
+                                                                style={{ borderRadius: '0 6px 6px 0' }}
+                                                            >
+                                                                {t.telegram_verify_bot || 'Fetch & Detect Chats'}
+                                                            </Button>
+                                                        }
+                                                    />
+                                                </Form.Item>
+
+                                                {botProfile && (
+                                                    <div style={{ marginBottom: 16 }}>
+                                                        <Alert
+                                                            type="success"
+                                                            showIcon
+                                                            style={{ marginBottom: 12 }}
+                                                            message={
+                                                                <Space wrap>
+                                                                    <span>🤖 <b>Bot Profile:</b> {botProfile.first_name} (<code>@{botProfile.username}</code>)</span>
+                                                                    <Tag color="blue">Bot ID: {botProfile.id}</Tag>
+                                                                    <Tag color="green">Ready</Tag>
+                                                                </Space>
+                                                            }
+                                                        />
+
+                                                        {/* 1-Click Direct Action Buttons */}
+                                                        <Card size="small" style={{ background: '#f6ffed', border: '1px solid #b7eb8f', marginBottom: 16 }}>
+                                                            <div style={{ fontWeight: 600, color: '#389e0d', marginBottom: 8 }}>
+                                                                🚀 {t.telegram_quick_connect || '1-Click Telegram Actions'}:
+                                                            </div>
+                                                            <Space wrap>
+                                                                <Button
+                                                                    type="primary"
+                                                                    icon={<LinkOutlined />}
+                                                                    style={{ background: '#52c41a', borderColor: '#52c41a' }}
+                                                                    onClick={() => {
+                                                                        window.open(`https://t.me/${botProfile.username}?startgroup=true`, '_blank');
+                                                                        message.info('Select your Group in Telegram, add the bot, then click "Fetch & Detect Chats" below!');
+                                                                    }}
+                                                                >
+                                                                    {t.telegram_add_to_group || '➕ Add Bot to Telegram Group'}
+                                                                </Button>
+                                                                <Button
+                                                                    type="default"
+                                                                    icon={<UserOutlined />}
+                                                                    onClick={() => {
+                                                                        window.open(`https://t.me/${botProfile.username}?start=connect`, '_blank');
+                                                                        message.info('Click Start in Telegram, then click "Fetch & Detect Chats" below!');
+                                                                    }}
+                                                                >
+                                                                    {t.telegram_open_dm || '💬 Open Direct Chat with Bot'}
+                                                                </Button>
+                                                            </Space>
+                                                        </Card>
+                                                    </div>
+                                                )}
+
+                                                <Form.Item label={<b>{t.telegram_connect_mode || 'Chat Connection Method'}</b>}>
+                                                    <Radio.Group
+                                                        value={telegramChatMode}
+                                                        onChange={(e) => setTelegramChatMode(e.target.value)}
+                                                        optionType="button"
+                                                        buttonStyle="solid"
+                                                    >
+                                                        <Radio.Button value="auto">⚡ {t.telegram_auto_mode || 'Auto-Detect Recent Chats'}</Radio.Button>
+                                                        <Radio.Button value="manual">✏️ {t.telegram_manual_mode || 'Manual Chat ID'}</Radio.Button>
+                                                    </Radio.Group>
+                                                </Form.Item>
+
+                                                {telegramChatMode === 'auto' ? (
+                                                    <div style={{ marginBottom: 16, background: '#fafafa', padding: '16px', borderRadius: '8px', border: '1px solid #f0f0f0' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                                            <span style={{ fontWeight: 600 }}>{t.telegram_detected_chats || 'Detected Chats & Groups'}:</span>
+                                                            <Button size="small" onClick={handleFetchTelegramChats} loading={fetchingChats} icon={<ReloadOutlined />}>
+                                                                {t.refresh || 'Refresh'}
+                                                            </Button>
+                                                        </div>
+
+                                                        {detectedChats.length > 0 ? (
+                                                            <List
+                                                                size="small"
+                                                                bordered
+                                                                dataSource={detectedChats}
+                                                                renderItem={item => (
+                                                                    <List.Item
+                                                                        style={{
+                                                                            background: settings.telegram_chat_id === item.chat_id ? '#e6f7ff' : '#fff',
+                                                                            transition: 'background 0.3s'
+                                                                        }}
+                                                                        actions={[
+                                                                            settings.telegram_chat_id === item.chat_id ? (
+                                                                                <Tag color="success" icon={<CheckCircleOutlined />}>{t.telegram_connected_chat || 'Connected'}</Tag>
+                                                                            ) : (
+                                                                                <Button
+                                                                                    type="primary"
+                                                                                    size="small"
+                                                                                    ghost
+                                                                                    onClick={() => {
+                                                                                        setSettings({ ...settings, telegram_chat_id: item.chat_id });
+                                                                                        message.success(`Selected Chat: ${item.title} (${item.chat_id})`);
+                                                                                    }}
+                                                                                >
+                                                                                    {t.telegram_select_chat || 'Connect'}
+                                                                                </Button>
+                                                                            )
+                                                                        ]}
+                                                                    >
+                                                                        <List.Item.Meta
+                                                                            avatar={
+                                                                                <span style={{ fontSize: '20px' }}>
+                                                                                    {item.type === 'supergroup' || item.type === 'group' ? '👥' : item.type === 'channel' ? '📢' : '👤'}
+                                                                                </span>
+                                                                            }
+                                                                            title={
+                                                                                <Space>
+                                                                                    <span>{item.title}</span>
+                                                                                    <Tag color={item.type === 'supergroup' || item.type === 'group' ? 'geekblue' : 'purple'}>
+                                                                                        {item.type.toUpperCase()}
+                                                                                    </Tag>
+                                                                                </Space>
+                                                                            }
+                                                                            description={<span style={{ fontFamily: 'monospace', color: '#888' }}>Chat ID: {item.chat_id}</span>}
+                                                                        />
+                                                                    </List.Item>
+                                                                )}
+                                                            />
+                                                        ) : (
+                                                            <div style={{ textAlign: 'center', padding: '16px', color: '#888' }}>
+                                                                <p>💬 {t.telegram_no_chats_found || 'No chats detected. Add your bot to a group or send /start to it, then click Fetch.'}</p>
+                                                                <Button type="dashed" onClick={handleFetchTelegramChats} loading={fetchingChats}>
+                                                                    🔍 {t.telegram_verify_bot || 'Fetch & Detect Chats'}
+                                                                </Button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <Form.Item
+                                                        label={<b>{t.telegram_chat_id || 'Telegram Chat / Group ID'}</b>}
+                                                        extra="For groups, chat ID usually starts with -100 (e.g. -1001234567890). For personal chat, enter your User ID."
+                                                    >
+                                                        <Input
+                                                            value={settings.telegram_chat_id}
+                                                            onChange={(e) => setSettings({ ...settings, telegram_chat_id: e.target.value })}
+                                                            placeholder={t.telegram_chat_id_placeholder || "-1001234567890 or 123456789"}
+                                                            style={{ fontFamily: 'monospace' }}
+                                                        />
+                                                    </Form.Item>
+                                                )}
+
+                                                {settings.telegram_chat_id && (
+                                                    <div style={{ marginBottom: 16 }}>
+                                                        <Tag color="cyan" style={{ fontSize: '13px', padding: '4px 10px' }}>
+                                                            🎯 Target Chat ID: <b>{settings.telegram_chat_id}</b>
+                                                        </Tag>
+                                                    </div>
+                                                )}
+
+                                                <Divider style={{ margin: '16px 0' }} />
+
+                                                <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+                                                    <Col xs={24} sm={12}>
+                                                        <Checkbox
+                                                            checked={!!settings.telegram_notify_success}
+                                                            onChange={(e) => setSettings({ ...settings, telegram_notify_success: e.target.checked })}
+                                                        >
+                                                            ✅ {t.telegram_notify_success_label || 'Notify on Payment Verified (ជោគជ័យ)'}
+                                                        </Checkbox>
+                                                    </Col>
+                                                    <Col xs={24} sm={12}>
+                                                        <Checkbox
+                                                            checked={!!settings.telegram_notify_create}
+                                                            onChange={(e) => setSettings({ ...settings, telegram_notify_create: e.target.checked })}
+                                                        >
+                                                            🧾 {t.telegram_notify_create_label || 'Notify on Invoice Created (បង្កើតថ្មី)'}
+                                                        </Checkbox>
+                                                    </Col>
+                                                </Row>
+
+                                                <Space wrap>
+                                                    <Button type="primary" onClick={handleSaveSettings}>
+                                                        💾 {t.save_settings || 'Save Settings'}
+                                                    </Button>
+                                                    <Button
+                                                        type="default"
+                                                        onClick={handleTestTelegram}
+                                                        loading={testingTelegram}
+                                                        disabled={!settings.telegram_bot_token || !settings.telegram_chat_id}
+                                                        icon={<SendOutlined />}
+                                                    >
+                                                        {t.telegram_test_btn || 'Send Test Message'}
+                                                    </Button>
+                                                </Space>
+                                            </Form>
+                                        </Card>
+
+                                        <Card
+                                            title={t.cors_config || 'CORS Configuration'}
+                                            bordered={false}
+                                            style={{ boxShadow: '0 1px 2px -2px rgba(0, 0, 0, 0.16)' }}
+                                        >
+                                            <Form layout="vertical">
+                                                <Form.Item label={t.allow_all_origins || 'Allow All Origins (*)'}>
+                                                    <Switch
+                                                        checked={settings.cors_origins === '*'}
+                                                        onChange={(checked) => setSettings({ ...settings, cors_origins: checked ? '*' : '' })}
+                                                    />
+                                                </Form.Item>
+                                                {settings.cors_origins !== '*' && (
+                                                    <Form.Item label={t.allowed_origins_list || 'Allowed Origins (one per line)'} extra={t.origins_hint || 'e.g. http://localhost:3000'}>
+                                                        <Input.TextArea
+                                                            rows={4}
+                                                            value={settings.cors_origins}
+                                                            onChange={(e) => setSettings({ ...settings, cors_origins: e.target.value })}
+                                                            placeholder="http://localhost:3000"
+                                                        />
+                                                    </Form.Item>
+                                                )}
+                                                <Button type="primary" onClick={handleSaveSettings}>{t.save_settings || 'Save Settings'}</Button>
+                                            </Form>
+                                        </Card>
+
+                                        <Card
+                                            title={t.api_keys_list || 'API Keys'}
+                                            bordered={false}
+                                            style={{ boxShadow: '0 1px 2px -2px rgba(0, 0, 0, 0.16)' }}
+                                            extra={
+                                                <Space>
+                                                    <Button type="text" onClick={fetchData}>{t.refresh || 'Refresh'}</Button>
+                                                    <Button type="primary" icon={<PlusOutlined />} onClick={() => openApiModal()}>
+                                                        {t.add_api_key || 'Add API Key'}
+                                                    </Button>
+                                                </Space>
+                                            }
+                                        >
+                                            <Table dataSource={data.api_keys} columns={apiKeyColumns} rowKey="id" loading={loading} pagination={{ pageSize: 10 }} scroll={{ x: 800 }} />
+                                        </Card>
+                                    </Space>
+                                )}
+
+                                {currentView === 'logs' && (
+                                    <div>
+                                        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+                                            <Col xs={12} sm={6}>
+                                                <Card bordered={false} style={{ boxShadow: '0 1px 2px -2px rgba(0, 0, 0, 0.16)' }}>
+                                                    <Statistic title={t.total_requests || 'Total Requests'} value={analytics.summary.total_requests} />
+                                                </Card>
+                                            </Col>
+                                            <Col xs={12} sm={6}>
+                                                <Card bordered={false} style={{ boxShadow: '0 1px 2px -2px rgba(0, 0, 0, 0.16)' }}>
+                                                    <Statistic title={t.top_token || 'Top Token'} value={analytics.summary.token_usage.length > 0 ? analytics.summary.token_usage[0].token_name : '-'} suffix={analytics.summary.token_usage.length > 0 ? `(${analytics.summary.token_usage[0].count})` : ''} />
+                                                </Card>
+                                            </Col>
+                                            <Col xs={12} sm={6}>
+                                                <Card bordered={false} style={{ boxShadow: '0 1px 2px -2px rgba(0, 0, 0, 0.16)' }}>
+                                                    <Statistic title={t.total_ips || 'Total IPs'} value={analytics.summary.total_ips} />
+                                                </Card>
+                                            </Col>
+                                            <Col xs={12} sm={6}>
+                                                <Card bordered={false} style={{ boxShadow: '0 1px 2px -2px rgba(0, 0, 0, 0.16)' }}>
+                                                    <Statistic title={t.top_country || 'Top Country'} value={analytics.summary.country_usage && analytics.summary.country_usage.length > 0 ? analytics.summary.country_usage[0].country : '-'} suffix={analytics.summary.country_usage && analytics.summary.country_usage.length > 0 ? `(${analytics.summary.country_usage[0].count})` : ''} />
+                                                </Card>
+                                            </Col>
+                                        </Row>
+
+                                        <Card bordered={false} style={{ marginBottom: 16, boxShadow: '0 1px 2px -2px rgba(0, 0, 0, 0.16)' }}>
+                                            <Space wrap>
+                                                <Input placeholder={t.search_logs || 'Search...'} value={analyticsFilters.search} onChange={e => setAnalyticsFilters({ ...analyticsFilters, search: e.target.value })} style={{ width: 200 }} onPressEnter={fetchAnalytics} />
+                                                <Select value={analyticsFilters.method} onChange={v => setAnalyticsFilters({ ...analyticsFilters, method: v })} style={{ width: 100 }}>
+                                                    <Select.Option value="ALL">ALL</Select.Option>
+                                                    <Select.Option value="GET">GET</Select.Option>
+                                                    <Select.Option value="POST">POST</Select.Option>
+                                                    <Select.Option value="PUT">PUT</Select.Option>
+                                                    <Select.Option value="DELETE">DELETE</Select.Option>
+                                                </Select>
+                                                <Select value={analyticsFilters.country} onChange={v => setAnalyticsFilters({ ...analyticsFilters, country: v })} style={{ width: 150 }}>
+                                                    <Select.Option value="ALL">ALL</Select.Option>
+                                                    {analytics.available_countries.map(c => <Select.Option key={c} value={c}>{c}</Select.Option>)}
+                                                </Select>
+                                                <DatePicker.RangePicker
+                                                    onChange={(dates) => {
+                                                        if (dates) {
+                                                            setAnalyticsFilters({ ...analyticsFilters, start_date: dates[0].toISOString(), end_date: dates[1].toISOString() });
+                                                        } else {
+                                                            setAnalyticsFilters({ ...analyticsFilters, start_date: '', end_date: '' });
+                                                        }
+                                                    }}
+                                                />
+                                                <Button type="primary" onClick={fetchAnalytics}>{t.apply_filters || 'Apply'}</Button>
+                                                <Button onClick={() => setAnalyticsFilters({ start_date: '', end_date: '', method: 'ALL', country: 'ALL', search: '' })}>{t.clear_filters || 'Clear'}</Button>
+                                                <Button danger onClick={handleClearAnalytics}>{t.clear_all_data || 'Clear All Data'}</Button>
+                                            </Space>
+                                        </Card>
+
+                                        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+                                            <Col xs={24} md={12}>
+                                                <Card title={t.token_usage || 'Token Usage'} bordered={false} style={{ boxShadow: '0 1px 2px -2px rgba(0, 0, 0, 0.16)' }}>
+                                                    <Table
+                                                        dataSource={analytics.summary.token_usage}
+                                                        columns={[
+                                                            { title: t.api_key_name || 'Token', dataIndex: 'token_name', key: 'token_name' },
+                                                            { title: t.total_requests || 'Requests', dataIndex: 'count', key: 'count' }
+                                                        ]}
+                                                        rowKey="token_name"
+                                                        pagination={{ pageSize: 5 }}
+                                                        size="small"
+                                                    />
+                                                </Card>
+                                            </Col>
+                                            <Col xs={24} md={12}>
+                                                <Card title={t.country_usage || 'Country Usage'} bordered={false} style={{ boxShadow: '0 1px 2px -2px rgba(0, 0, 0, 0.16)' }}>
+                                                    <Table
+                                                        dataSource={analytics.summary.country_usage}
+                                                        columns={[
+                                                            { title: t.country || 'Country', dataIndex: 'country', key: 'country' },
+                                                            { title: t.total_requests || 'Requests', dataIndex: 'count', key: 'count' }
+                                                        ]}
+                                                        rowKey="country"
+                                                        pagination={{ pageSize: 5 }}
+                                                        size="small"
+                                                    />
+                                                </Card>
+                                            </Col>
+                                        </Row>
+
+                                        <Card
+                                            title={t.traffic_logs || 'API Traffic'}
+                                            bordered={false}
+                                            style={{ boxShadow: '0 1px 2px -2px rgba(0, 0, 0, 0.16)' }}
+                                            extra={<Button type="text" onClick={fetchAnalytics}>{t.refresh || 'Refresh'}</Button>}
+                                        >
+                                            <Table dataSource={analytics.logs} columns={apiLogColumns} rowKey="id" loading={loading} pagination={{ pageSize: 10 }} scroll={{ x: 800 }} />
+                                        </Card>
+                                    </div>
+                                )}
+
+                                {currentView === 'api_docs' && (
+                                    <Card title={<span><ApiOutlined /> {t.menu_api_docs || 'API Documentation'}</span>} bordered={false} style={{ boxShadow: '0 1px 2px -2px rgba(0, 0, 0, 0.16)' }}>
+                                        <Typography.Title level={4}>Authentication</Typography.Title>
+                                        <Typography.Paragraph>
+                                            All API requests require an API key to be sent in the header:
+                                            <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', marginTop: '8px' }}><code>X-API-Key: YOUR_API_KEY</code></pre>
+                                        </Typography.Paragraph>
+
+                                        <Typography.Title level={4} style={{ marginTop: '24px' }}>Endpoints</Typography.Title>
+
+                                        <Card size="small" title={<Tag color="blue">POST</Tag>} extra={<Text strong>/api/v1/payment/create</Text>} style={{ marginBottom: 16 }}>
+                                            <Typography.Paragraph>Creates a new payment QR code invoice.</Typography.Paragraph>
+                                            <Typography.Text strong>Request Body (JSON):</Typography.Text>
+                                            <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', marginTop: '8px' }}><code>{`{
+  "code_merchant": "aba_merchant_1",
+  "amount": "1.50",
+  "currency": "USD"
+}`}</code></pre>
+                                            <Typography.Text strong>Response:</Typography.Text>
+                                            <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', marginTop: '8px' }}><code>{`{
+  "invoice_id": 12345,
+  "payment_status": "PROCESSING"
+}`}</code></pre>
+                                        </Card>
+
+                                        <Card size="small" title={<Tag color="green">GET</Tag>} extra={<Text strong>/api/v1/payment/verify/{'{invoice_id}'}</Text>} style={{ marginBottom: 16 }}>
+                                            <Typography.Paragraph>Verifies the status of a payment by its invoice ID via JSON API.</Typography.Paragraph>
+                                            <Typography.Text strong>Response:</Typography.Text>
+                                            <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', marginTop: '8px' }}><code>{`{
+  "invoice_id": 12345,
+  "amount": "1.50",
+  "currency": "USD",
+  "status": "SUCCESS",
+  "khqr": "000201010212...",
+  "receipt": "https://payway.ababank.com/receipt/..."
+}`}</code></pre>
+                                        </Card>
+
+                                        <Card size="small" title={<Tag color="green">GET</Tag>} extra={<Text strong>/api/v1/payment/qr-code/verify/{'{invoice_id}'}</Text>}>
+                                            <Typography.Paragraph>Renders an HTML payment card interface for the QR code, which automatically updates upon payment status change.</Typography.Paragraph>
+                                            <Typography.Text strong>Response:</Typography.Text>
+                                            <pre style={{ background: themeMode === 'dark' ? '#1f1f1f' : (themeMode === 'glass' ? 'rgba(0,0,0,0.1)' : '#f5f5f5'), padding: '12px', borderRadius: '4px', marginTop: '8px' }}><code>Content-Type: text/html</code></pre>
+                                        </Card>
+
+                                        <Typography.Title level={4} style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            Code Samples
+                                            <Space>
+                                                <Select
+                                                    value={selectedEndpoint}
+                                                    onChange={v => setSelectedEndpoint(v)}
+                                                    style={{ width: 250, fontWeight: 'normal', fontSize: '14px' }}
+                                                >
+                                                    <Select.Option value="create">POST /api/v1/payment/create</Select.Option>
+                                                    <Select.Option value="verify_json">GET /api/v1/payment/verify/{"{id}"}</Select.Option>
+                                                    <Select.Option value="verify_html">GET /api/v1/payment/qr-code/verify/{"{id}"}</Select.Option>
+                                                </Select>
+                                                <Select
+                                                    placeholder="Select API Key"
+                                                    value={selectedApiToken === 'YOUR_API_KEY' ? undefined : selectedApiToken}
+                                                    onChange={v => setSelectedApiToken(v)}
+                                                    style={{ width: 180, fontWeight: 'normal', fontSize: '14px' }}
+                                                >
+                                                    {(data.api_keys || []).filter(k => k.status === 'ACTIVE').map(k => (
+                                                        <Select.Option key={k.key_value} value={k.key_value}>{k.name}</Select.Option>
+                                                    ))}
+                                                </Select>
+                                            </Space>
+                                        </Typography.Title>
+                                        <Tabs defaultActiveKey="1" items={renderCodeSamples()} />
+                                    </Card>
+                                )}
+
+                            </Content>
+                        </Layout>
+
+                        <Footer style={{ textAlign: 'center', color: '#888' }}>
+                            PayWay Automation Engine ©{new Date().getFullYear()}
+                        </Footer>
+
+                    </Layout>
+
+                    <div className="mobile-bottom-nav">
+                        <div className={`mobile-nav-item ${currentView === 'dashboard' ? 'active' : ''}`} onClick={() => setCurrentView('dashboard')}>
+                            <AppstoreOutlined />
+                            <span>{t.menu_dashboard || 'Dashboard'}</span>
+                        </div>
+                        <div className={`mobile-nav-item ${currentView === 'ledger' ? 'active' : ''}`} onClick={() => setCurrentView('ledger')}>
+                            <DatabaseOutlined />
+                            <span>{t.menu_ledger || 'Ledger'}</span>
+                        </div>
+                        <div className={`mobile-nav-item ${currentView === 'merchants' ? 'active' : ''}`} onClick={() => setCurrentView('merchants')}>
+                            <ShopOutlined />
+                            <span>{t.menu_merchants || 'Merchants'}</span>
+                        </div>
+                        <div className={`mobile-nav-item ${currentView === 'create_qr' ? 'active' : ''}`} onClick={() => setCurrentView('create_qr')}>
+                            <QrcodeOutlined />
+                            <span>{t.menu_create_qr || 'Test QR'}</span>
+                        </div>
+                        <div className={`mobile-nav-item ${currentView === 'api_docs' ? 'active' : ''}`} onClick={() => setCurrentView('api_docs')}>
+                            <ApiOutlined />
+                            <span>{t.menu_api_docs || 'API Docs'}</span>
+                        </div>
+                        <div className={`mobile-nav-item ${currentView === 'settings' ? 'active' : ''}`} onClick={() => setCurrentView('settings')}>
+                            <SettingOutlined />
+                            <span>{t.menu_settings || 'Settings'}</span>
+                        </div>
+                        <div className={`mobile-nav-item ${currentView === 'logs' ? 'active' : ''}`} onClick={() => setCurrentView('logs')}>
+                            <LineChartOutlined />
+                            <span>{t.menu_traffic || 'Logs'}</span>
+                        </div>
+                    </div>
+
+                    <Modal title={editingMerchant ? (t.edit_merchant || "Edit Merchant") : (t.add_merchant || "Add Merchant")} open={isModalVisible} onCancel={() => setIsModalVisible(false)} footer={null}>
+                        <Form form={form} layout="vertical" onFinish={handleAddMerchant}>
+                            <Form.Item label={t.code_merchant || "Merchant Code"} name="code_merchant" rules={[{ required: true }]}>
+                                <Input placeholder="e.g. aba_merchant_1" disabled={!!editingMerchant} />
+                            </Form.Item>
+                            <Form.Item label={t.name || "Name"} name="name" rules={[{ required: true }]}>
+                                <Input placeholder="e.g. My Coffee Shop" />
+                            </Form.Item>
+                            <Form.Item label={t.description || "Description"} name="description">
+                                <Input.TextArea />
+                            </Form.Item>
+                            <Form.Item label={t.khr_link || "KHR Link"} name="payment_link_khr" rules={[{ required: true }]}>
+                                <Input placeholder="https://link.payway.com.kh/..." />
+                            </Form.Item>
+                            <Form.Item label={t.usd_link || "USD Link"} name="payment_link_usd" rules={[{ required: true }]}>
+                                <Input placeholder="https://link.payway.com.kh/..." />
+                            </Form.Item>
+                            <Form.Item
+                                label={
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                                        <span>🤖 {t.merchant_telegram_chat || "Telegram Chat / Group ID (Optional)"}</span>
+                                        <Space size="small">
+                                            {botProfile?.username && (
+                                                <Button
+                                                    type="primary"
+                                                    size="small"
+                                                    icon={<LinkOutlined />}
+                                                    style={{ background: '#52c41a', borderColor: '#52c41a' }}
+                                                    onClick={() => {
+                                                        const code = form.getFieldValue('code_merchant') || editingMerchant?.code_merchant;
+                                                        const name = form.getFieldValue('name') || editingMerchant?.name || code;
+                                                        if (!code) {
+                                                            message.warning('Please enter Merchant Code first.');
+                                                            return;
+                                                        }
+                                                        handleInviteMerchantToTelegram({ code_merchant: code, name: name });
+                                                    }}
+                                                >
+                                                    {t.invite_bot_modal_btn || "➕ 1-Click Invite & Connect"}
+                                                </Button>
+                                            )}
+                                            {detectedChats.length > 0 && (
+                                                <Dropdown
+                                                    menu={{
+                                                        items: detectedChats.map(c => ({
+                                                            key: c.chat_id,
+                                                            label: `${c.type === 'group' || c.type === 'supergroup' ? '👥' : '👤'} ${c.title} (${c.chat_id})`,
+                                                            onClick: () => {
+                                                                const curr = form.getFieldValue('telegram_chat_id') || '';
+                                                                const updated = curr ? `${curr}, ${c.chat_id}` : c.chat_id;
+                                                                form.setFieldsValue({ telegram_chat_id: updated });
+                                                            }
+                                                        }))
+                                                    }}
+                                                    trigger={['click']}
+                                                >
+                                                    <Button type="default" size="small" icon={<PlusOutlined />}>
+                                                        {t.insert_detected_chat || "Insert Detected Chat"}
+                                                    </Button>
+                                                </Dropdown>
+                                            )}
+                                        </Space>
+                                    </div>
+                                }
+                                name="telegram_chat_id"
+                                extra="Leave empty to use Global Telegram Group from Settings. You can click '1-Click Invite & Connect' to invite the bot to your group and auto-connect!"
+                            >
+                                <Input placeholder="e.g. -1001234567890 (or multiple IDs separated by comma)" style={{ fontFamily: 'monospace' }} />
+                            </Form.Item>
+                            {editingMerchant && (
+                                <Form.Item label={t.status || "Status"} name="status" rules={[{ required: true }]}>
+                                    <Select>
+                                        <Select.Option value="ACTIVE">ACTIVE</Select.Option>
+                                        <Select.Option value="INACTIVE">INACTIVE</Select.Option>
+                                    </Select>
+                                </Form.Item>
+                            )}
+                            <Form.Item>
+                                <Space>
+                                    <Button type="primary" htmlType="submit">{t.submit || "Submit"}</Button>
+                                    <Button onClick={() => setIsModalVisible(false)}>{t.cancel || "Cancel"}</Button>
+                                </Space>
+                            </Form.Item>
+                        </Form>
+                    </Modal>
+
+                    <Modal title={t.add_api_key || "Add API Key"} open={isApiKeyModalVisible} onCancel={() => setIsApiKeyModalVisible(false)} footer={null}>
+                        <Form form={apiForm} layout="vertical" onFinish={handleAddApiKey}>
+                            <Form.Item label={t.api_key_name || "Key Name"} name="name" rules={[{ required: true }]}>
+                                <Input placeholder="e.g. POS System 1" />
+                            </Form.Item>
+                            <Form.Item label={t.api_key_desc || "Description"} name="description">
+                                <Input.TextArea />
+                            </Form.Item>
+                            {editingApiKey && (
+                                <Form.Item label={t.status || "Status"} name="status" rules={[{ required: true }]}>
+                                    <Select>
+                                        <Select.Option value="ACTIVE">ACTIVE</Select.Option>
+                                        <Select.Option value="REVOKED">REVOKED</Select.Option>
+                                    </Select>
+                                </Form.Item>
+                            )}
+                            <Form.Item>
+                                <Space>
+                                    <Button type="primary" htmlType="submit">{t.submit || "Submit"}</Button>
+                                    <Button onClick={() => setIsApiKeyModalVisible(false)}>{t.cancel || "Cancel"}</Button>
+                                </Space>
+                            </Form.Item>
+                        </Form>
+                    </Modal>
+                </ConfigProvider>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>

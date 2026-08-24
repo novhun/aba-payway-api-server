@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PayWay · Glass Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Kantumruy Pro', sans-serif;
+      background: #f0f4fc;
+      background-image: radial-gradient(circle at 20% 30%, rgba(22, 119, 255, 0.03) 0%, transparent 30%),
+                        radial-gradient(circle at 80% 70%, rgba(82, 196, 26, 0.03) 0%, transparent 40%);
+      min-height: 100vh;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 8px 32px rgba(0, 20, 40, 0.08);
+      border-radius: 24px;
+      transition: all 0.25s ease;
+    }
+    .glass-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 48px rgba(0, 20, 40, 0.12);
+    }
+    .login-container {
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(145deg, #e9f0fa 0%, #dae3f0 100%);
+      backdrop-filter: blur(4px);
+    }
+    .login-card {
+      width: 90%;
+      max-width: 400px;
+      padding: 32px 28px;
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(16px);
+      border-radius: 40px;
+      border: 1px solid rgba(255,255,255,0.5);
+      box-shadow: 0 20px 60px rgba(0, 20, 40, 0.15);
+    }
+    .login-logo {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #1677ff, #52c41a);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: 700;
+      color: white;
+      margin: 0 auto 16px;
+      box-shadow: 0 12px 24px -8px rgba(22, 119, 255, 0.3);
+    }
+    .mobile-bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(255,255,255,0.75);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(255,255,255,0.3);
+      z-index: 1000;
+      justify-content: space-around;
+      padding: 4px 0 12px;
+    }
+    .mobile-nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #6b7a8f;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.2s;
+      padding: 4px 0;
+    }
+    .mobile-nav-item .anticon { font-size: 22px; margin-bottom: 2px; }
+    .mobile-nav-item.active { color: #1677ff; }
+    .mobile-nav-item span:not(.anticon) { opacity: 0.7; }
+    .mobile-nav-item.active span:not(.anticon) { opacity: 1; font-weight: 600; }
+    @media (max-width: 768px) {
+      .desktop-only { display: none !important; }
+      .mobile-padding { padding: 12px 12px 90px 12px !important; }
+      .mobile-bottom-nav { display: flex; }
+    }
+    .live-dot {
+      width: 10px; height: 10px; background: #52c41a; border-radius: 50%;
+      display: inline-block; animation: pulse-live 1.8s infinite;
+      margin-right: 8px; vertical-align: middle;
+    }
+    @keyframes pulse-live {
+      0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(82,196,26,0.5); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(82,196,26,0); }
+      100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(82,196,26,0); }
+    }
+    .stat-icon {
+      width: 44px; height: 44px; border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .ant-layout, .ant-layout-header, .ant-layout-sider, .ant-layout-content {
+      background: transparent !important;
+    }
+    .ant-menu {
+      background: transparent !important;
+      border-right: none !important;
+    }
+    .ant-menu-item-selected {
+      background: rgba(22, 119, 255, 0.12) !important;
+      border-radius: 16px !important;
+    }
+    .ant-card {
+      border-radius: 20px !important;
+      border: 1px solid rgba(255,255,255,0.3) !important;
+      background: rgba(255,255,255,0.55) !important;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 20px rgba(0, 20, 40, 0.04) !important;
+    }
+    .ant-table-wrapper .ant-table {
+      background: transparent !important;
+      border-radius: 16px !important;
+    }
+    .ant-table-cell {
+      background: transparent !important;
+    }
+    .ant-table-thead > tr > th {
+      background: rgba(255,255,255,0.3) !important;
+      backdrop-filter: blur(4px);
+    }
+    .ant-btn-primary {
+      box-shadow: 0 6px 16px -4px rgba(22, 119, 255, 0.25);
+    }
+    .ant-input, .ant-select-selector, .ant-picker {
+      background: rgba(255,255,255,0.5) !important;
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255,255,255,0.5) !important;
+    }
+    .ant-input:focus, .ant-select-focused .ant-select-selector {
+      border-color: #1677ff !important;
+      box-shadow: 0 0 0 3px rgba(22,119,255,0.1) !important;
+    }
+    body.theme-dark .glass-card { background: rgba(20, 20, 30, 0.7); border-color: rgba(255,255,255,0.05); }
+    body.theme-dark .ant-card { background: rgba(30, 30, 40, 0.7) !important; border-color: rgba(255,255,255,0.05) !important; }
+    body.theme-dark .ant-table-thead > tr > th { background: rgba(40,40,50,0.5) !important; }
+    body.theme-dark .ant-input, body.theme-dark .ant-select-selector { background: rgba(30,30,40,0.6) !important; }
+    body.theme-dark .mobile-bottom-nav { background: rgba(20,20,30,0.8) !important; }
+  </style>
+  <!-- React & deps -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/dayjs@1.11.10/dayjs.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/antd@5.14.0/dist/reset.css" />
+  <script src="https://unpkg.com/antd@5.14.0/dist/antd.min.js"></script>
+  <script src="https://unpkg.com/@ant-design/icons@5.3.0/dist/index.umd.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useCallback } = React;
+    const { Layout, Menu, Table, Card, Row, Col, Select, Typography, ConfigProvider, Space, Tag, Button, Modal, Form, Input, message, DatePicker, Statistic, Switch, Tabs, Progress, Badge, Tooltip, Divider, Radio, List, Checkbox, Alert, Dropdown } = antd;
+    const { Header, Content, Footer, Sider } = Layout;
+    const { Title, Text } = Typography;
+    const icons = window.icons;
+    const { 
+      GlobalOutlined, CheckCircleOutlined, SyncOutlined, CloseCircleOutlined, ClockCircleOutlined,
+      DatabaseOutlined, ShopOutlined, PlusOutlined, UserOutlined, LockOutlined, LoginOutlined,
+      LogoutOutlined, SettingOutlined, LineChartOutlined, EyeOutlined, EyeInvisibleOutlined,
+      AppstoreOutlined, QrcodeOutlined, DownloadOutlined, ApiOutlined, HddOutlined,
+      DashboardOutlined, ThunderboltOutlined, CloudServerOutlined, LinkOutlined,
+      ReloadOutlined, SearchOutlined, SendOutlined
+    } = icons;
+
+    function App() {
+      const [token, setToken] = useState(localStorage.getItem('adminToken'));
+      const [lang, setLang] = useState('en');
+      const [t, setT] = useState({});
+      const [data, setData] = useState({ orders: [], merchants: [], api_keys: [], api_logs: [] });
+      const [loading, setLoading] = useState(false);
+      const [currentView, setCurrentView] = useState('dashboard');
+      const [isModalVisible, setIsModalVisible] = useState(false);
+      const [editingMerchant, setEditingMerchant] = useState(null);
+      const [isApiKeyModalVisible, setIsApiKeyModalVisible] = useState(false);
+      const [editingApiKey, setEditingApiKey] = useState(null);
+      const [form] = Form.useForm();
+      const [apiForm] = Form.useForm();
+      const [qrResult, setQrResult] = useState(null);
+      const [activeApiKey, setActiveApiKey] = useState(null);
+      const [countdown, setCountdown] = useState(null);
+      const [selectedApiToken, setSelectedApiToken] = useState('YOUR_API_KEY');
+      const [selectedEndpoint, setSelectedEndpoint] = useState('create');
+      const [testPayload, setTestPayload] = useState('{\n  "code_merchant": "aba_merchant_1",\n  "amount": "1.50",\n  "currency": "USD"\n}');
+      const [testInvoiceId, setTestInvoiceId] = useState('12345');
+      const [testResults, setTestResults] = useState({});
+      const [isTesting, setIsTesting] = useState(false);
+      const [themeMode, setThemeMode] = useState(localStorage.getItem('ui_theme') || 'light');
+      const [primaryColor, setPrimaryColor] = useState(localStorage.getItem('ui_color') || '#1677ff');
+      const [analytics, setAnalytics] = useState({ summary: { total_requests: 0, total_ips: 0, total_countries: 0, token_usage: [], country_usage: [] }, available_countries: [], logs: [] });
+      const [analyticsFilters, setAnalyticsFilters] = useState({ start_date: '', end_date: '', method: 'ALL', country: 'ALL', search: '' });
+      const [ledgerFilters, setLedgerFilters] = useState({ start_date: '', end_date: '', status: 'ALL', merchant_name: 'ALL', search: '' });
+      const [availableMerchants, setAvailableMerchants] = useState([]);
+      const [visibleTokens, setVisibleTokens] = useState({});
+      const [dashboardData, setDashboardData] = useState({ total_orders: 0, success_orders: 0, active_merchants: 0, active_api_keys: 0, total_revenue_usd: 0, total_revenue_khr: 0, trend: [], system_metrics: { cpu: { percent: 0, cores: 1 }, ram: { total_gb: 0, used_gb: 0, free_gb: 0, percent: 0 }, storage: { total_gb: 0, used_gb: 0, free_gb: 0, percent: 0 }, process: { memory_mb: 0 }, browser: { is_running: false, active_contexts: 0 } }, recent_tasks: [] });
+      const [liveAutoRefresh, setLiveAutoRefresh] = useState(true);
+      const [lastSyncedTime, setLastSyncedTime] = useState(new Date().toLocaleTimeString());
+      const [taskStatusFilter, setTaskStatusFilter] = useState('ALL');
+      const [taskSearchText, setTaskSearchText] = useState('');
+      const [settings, setSettings] = useState({ cors_origins: '*', telegram_bot_token: '', telegram_chat_id: '', telegram_enabled: false, telegram_notify_success: true, telegram_notify_create: false, db_size_bytes: 0 });
+      const [telegramChatMode, setTelegramChatMode] = useState('auto');
+      const [detectedChats, setDetectedChats] = useState([]);
+      const [botProfile, setBotProfile] = useState(null);
+      const [fetchingChats, setFetchingChats] = useState(false);
+      const [testingTelegram, setTestingTelegram] = useState(false);
+
+      useEffect(() => {
+        fetch(`/assets/lang/${lang}.json`).then(res => res.json()).then(s => setT(s)).catch(() => {});
+      }, [lang]);
+      useEffect(() => {
+        localStorage.setItem('ui_theme', themeMode);
+        document.body.className = '';
+        if (themeMode === 'dark') document.body.classList.add('theme-dark');
+      }, [themeMode]);
+      useEffect(() => { localStorage.setItem('ui_color', primaryColor); }, [primaryColor]);
+
+      const handleLogin = (values) => {
+        const encoded = btoa(`${values.username}:${values.password}`);
+        fetch('/api/v1/admin/data', { headers: { 'Authorization': `Basic ${encoded}` } })
+          .then(res => { if(res.ok){ localStorage.setItem('adminToken', encoded); setToken(encoded); message.success('Welcome back.'); } else message.error('Invalid credentials'); })
+          .catch(() => message.error('Network error'));
+      };
+      const handleLogout = () => { localStorage.removeItem('adminToken'); setToken(null); message.info('Signed out.'); };
+      const fetchData = useCallback(() => {
+        if(!token) return; setLoading(true);
+        fetch('/api/v1/admin/data', { headers: { 'Authorization': `Basic ${token}` } })
+          .then(res => { if(res.status===401) handleLogout(); return res.json(); })
+          .then(json => { setData(json); setLoading(false); }).catch(() => setLoading(false));
+      }, [token]);
+      const fetchDashboard = useCallback(() => {
+        if(!token) return;
+        fetch('/api/v1/admin/dashboard', { headers: { 'Authorization': `Basic ${token}` } })
+          .then(res => res.json()).then(json => setDashboardData(json)).catch(() => {});
+      }, [token]);
+      const fetchAnalytics = useCallback(() => {
+        if(!token) return; setLoading(true);
+        const q = new URLSearchParams();
+        if(analyticsFilters.start_date) q.append('start_date', analyticsFilters.start_date);
+        if(analyticsFilters.end_date) q.append('end_date', analyticsFilters.end_date);
+        if(analyticsFilters.method !== 'ALL') q.append('method', analyticsFilters.method);
+        if(analyticsFilters.country !== 'ALL') q.append('country', analyticsFilters.country);
+        if(analyticsFilters.search) q.append('search', analyticsFilters.search);
+        fetch('/api/v1/admin/analytics?'+q.toString(), { headers: { 'Authorization': `Basic ${token}` } })
+          .then(res => res.json()).then(json => { setAnalytics(json); setLoading(false); }).catch(() => setLoading(false));
+      }, [token, analyticsFilters]);
+      const fetchLedger = useCallback(() => {
+        if(!token) return; setLoading(true);
+        const q = new URLSearchParams();
+        if(ledgerFilters.start_date) q.append('start_date', ledgerFilters.start_date);
+        if(ledgerFilters.end_date) q.append('end_date', ledgerFilters.end_date);
+        if(ledgerFilters.status !== 'ALL') q.append('status', ledgerFilters.status);
+        if(ledgerFilters.merchant_name !== 'ALL') q.append('merchant_name', ledgerFilters.merchant_name);
+        if(ledgerFilters.search) q.append('search', ledgerFilters.search);
+        fetch('/api/v1/admin/ledger?'+q.toString(), { headers: { 'Authorization': `Basic ${token}` } })
+          .then(res => res.json()).then(json => { setData(prev => ({...prev, orders: json.orders })); if(json.available_merchants) setAvailableMerchants(json.available_merchants); setLoading(false); })
+          .catch(() => setLoading(false));
+      }, [token, ledgerFilters]);
+      const fetchSettings = useCallback(() => {
+        if(!token) return;
+        fetch('/api/v1/admin/settings', { headers: { 'Authorization': `Basic ${token}` } })
+          .then(res => res.json()).then(data => setSettings(data));
+      }, [token]);
+
+      useEffect(() => { if(token) { fetchData(); fetchDashboard(); } }, [token]);
+      useEffect(() => { if(token && currentView==='logs') fetchAnalytics(); }, [token, currentView]);
+      useEffect(() => { if(token && currentView==='ledger') fetchLedger(); }, [token, currentView]);
+      useEffect(() => { if(token && currentView==='settings') fetchSettings(); }, [token, currentView]);
+
+      const exportToExcel = () => {
+        if(!data.orders?.length) return message.warning('No data');
+        const ws = XLSX.utils.json_to_sheet(data.orders.map(o => ({ ID:o.id, Merchant:o.merchant_name, Amount:o.amount, Currency:o.currency, Status:o.status, Date:o.updated_at || o.created_at })));
+        const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Transactions"); XLSX.writeFile(wb, `transactions.xlsx`);
+      };
+      const exportToPDF = () => {
+        if(!data.orders?.length) return message.warning('No data');
+        const { jsPDF } = window.jspdf; const doc = new jsPDF();
+        doc.text('Transactions Report', 14, 15);
+        doc.autoTable({ head: [['ID','Merchant','Amount','Currency','Status','Date']], body: data.orders.map(o => [o.id, o.merchant_name, o.amount, o.currency, o.status, o.updated_at || o.created_at]), startY: 20 });
+        doc.save('transactions.pdf');
+      };
+
+      const handleInviteMerchantToTelegram = (merchant) => {
+        const username = botProfile?.username;
+        if (!username) {
+          message.warning('Please click "Fetch" in Settings -> Telegram alerts first.');
+          return;
+        }
+        const inviteUrl = `https://t.me/${username}?startgroup=${merchant.code_merchant}`;
+        window.open(inviteUrl, '_blank');
+        message.loading({ content: `Listening for auto-connect on '${merchant.name}'...`, duration: 12 });
+        let count = 0;
+        const interval = setInterval(() => {
+          count++;
+          if (count > 8) { clearInterval(interval); return; }
+          fetch('/api/v1/admin/telegram/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Basic ${token}` },
+            body: JSON.stringify({ bot_token: settings.telegram_bot_token })
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.connected && data.connected.length > 0) {
+              const matched = data.connected.find(c => c.code_merchant === merchant.code_merchant);
+              if (matched) {
+                message.success(`🎉 Connected to ${matched.chat_title} (${matched.chat_id})!`);
+                clearInterval(interval);
+                fetchData();
+              }
+            }
+          }).catch(() => {});
+        }, 2500);
+      };
+
+      const ledgerColumns = [
+        { title: 'ID', dataIndex: 'id', render: t => <Text strong>#{t}</Text> },
+        { title: 'Merchant', dataIndex: 'merchant_name' },
+        { title: 'Amount', render: (_, r) => <Text strong style={{color:'#1677ff'}}>{parseFloat(r.amount).toLocaleString()} {r.currency}</Text> },
+        { title: 'Status', dataIndex: 'status', render: s => {
+          const map = { SUCCESS: <Tag icon={<CheckCircleOutlined />} color="success">SUCCESS</Tag>, PENDING: <Tag icon={<SyncOutlined spin />} color="processing">PENDING</Tag>, FAILED: <Tag icon={<CloseCircleOutlined />} color="error">FAILED</Tag>, EXPIRED: <Tag icon={<ClockCircleOutlined />} color="warning">EXPIRED</Tag> };
+          return map[s] || <Tag>{s}</Tag>;
+        }},
+        { title: 'Updated', dataIndex: 'updated_at', render: d => new Date(d+'Z').toLocaleString() }
+      ];
+      const merchantColumns = [
+        { title: 'Code', dataIndex: 'code_merchant', render: t => <Text code>{t}</Text> },
+        { title: 'Name', dataIndex: 'name' },
+        { title: 'Description', dataIndex: 'description' },
+        { title: 'Links', render: (_, r) => <Space><a href={r.payment_link_khr} target="_blank">KHR</a><a href={r.payment_link_usd} target="_blank">USD</a></Space> },
+        { 
+          title: '🤖 Telegram Chat', 
+          dataIndex: 'telegram_chat_id', 
+          render: text => {
+            if (!text || !text.trim()) return <Tag color="default">⚙️ Global</Tag>;
+            return (
+              <Space wrap size={[0, 2]}>
+                {text.split(',').map(s => s.trim()).filter(Boolean).map(id => (
+                  <Tag color="success" key={id} style={{ fontFamily: 'monospace' }}>👥 {id}</Tag>
+                ))}
+              </Space>
+            );
+          }
+        },
+        { 
+          title: 'Actions', 
+          render: (_, r) => (
+            <Space>
+              <Button type="link" onClick={() => { setEditingMerchant(r); form.setFieldsValue(r); setIsModalVisible(true); }}>Edit</Button>
+              {botProfile && botProfile.username && (
+                <Button size="small" type="default" style={{ color: '#389e0d', borderColor: '#b7eb8f', background: '#f6ffed' }} icon={<LinkOutlined />} onClick={() => handleInviteMerchantToTelegram(r)}>Auto-Connect</Button>
+              )}
+            </Space>
+          )
+        }
+      ];
+      const apiKeyColumns = [
+        { title: 'Name', dataIndex: 'name' },
+        { title: 'Token', dataIndex: 'key_value', render: (t, r) => <Space><Text copyable code>{visibleTokens[r.id] ? t : '••••••••••••••••'}</Text><Button type="text" icon={visibleTokens[r.id] ? <EyeInvisibleOutlined /> : <EyeOutlined />} onClick={() => setVisibleTokens(p => ({...p, [r.id]: !p[r.id]}))} /></Space> },
+        { title: 'Status', dataIndex: 'status', render: s => <Tag color={s==='ACTIVE'?'green':'red'}>{s}</Tag> },
+        { title: 'Actions', render: (_, r) => <Button type="link" onClick={() => { setEditingApiKey(r); apiForm.setFieldsValue(r); setIsApiKeyModalVisible(true); }}>Edit</Button> }
+      ];
+
+      const formatUTC = (d) => d ? new Date(d+'Z').toLocaleString() : '-';
+      const formatBytes = (b) => { if(!b) return '0 Bytes'; const i=Math.floor(Math.log(b)/Math.log(1024)); return (b/Math.pow(1024,i)).toFixed(1)+' '+['Bytes','KB','MB','GB','TB'][i]; };
+
+      if(!token) return (
+        <ConfigProvider theme={{ token: { fontFamily: "'Kantumruy Pro', sans-serif", colorPrimary: primaryColor } }}>
+          <div className="login-container">
+            <div className="login-card">
+              <div className="login-logo">P</div>
+              <Title level={3} style={{ textAlign:'center', fontWeight:600, marginBottom:4 }}>PayWay</Title>
+              <Text type="secondary" style={{ display:'block', textAlign:'center', marginBottom:24 }}>Admin · secure access</Text>
+              <Form onFinish={handleLogin} size="large">
+                <Form.Item name="username" rules={[{ required:true }]}><Input prefix={<UserOutlined />} placeholder="Username" /></Form.Item>
+                <Form.Item name="password" rules={[{ required:true }]}><Input.Password prefix={<LockOutlined />} placeholder="Password" /></Form.Item>
+                <Button type="primary" htmlType="submit" block size="large" style={{ borderRadius:16 }}>Sign In</Button>
+              </Form>
+            </div>
+          </div>
+        </ConfigProvider>
+      );
+
+      return (
+        <ConfigProvider theme={{ algorithm: themeMode==='dark'?antd.theme.darkAlgorithm:antd.theme.defaultAlgorithm, token: { fontFamily: "'Kantumruy Pro', sans-serif", colorPrimary: primaryColor, borderRadius: 12 } }}>
+          <Layout style={{ minHeight:'100vh', background:'transparent' }}>
+            <Header style={{ background:'rgba(255,255,255,0.5)', backdropFilter:'blur(16px)', borderBottom:'1px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 20px' }}>
+              <Space>
+                <div style={{ width:36, height:36, background:`linear-gradient(135deg, ${primaryColor}, #52c41a)`, borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:700 }}>P</div>
+                <Title level={4} style={{ margin:0, fontWeight:600 }}>PayWay</Title>
+                <Tag color="geekblue" style={{ borderRadius: 8 }}>Glass v2</Tag>
+              </Space>
+              <Space>
+                <Button size="small" type="dashed" onClick={() => window.location.href='/'}>⚡ UI v1</Button>
+                <Button size="small" type="dashed" onClick={() => window.location.href='/ui/3'}>💎 UI v3</Button>
+                <input type="color" value={primaryColor} onChange={e=>setPrimaryColor(e.target.value)} style={{ width:28, height:28, border:'none', padding:0, borderRadius:'50%', cursor:'pointer', background:'transparent' }} />
+                <Select value={themeMode} onChange={setThemeMode} options={[{value:'light',label:'Light'},{value:'dark',label:'Dark'}]} style={{ width:80 }} />
+                <Select value={lang} onChange={setLang} options={[{value:'en',label:'EN'},{value:'km',label:'KM'}]} style={{ width:70 }} />
+                <Button type="text" icon={<LogoutOutlined />} onClick={handleLogout} />
+              </Space>
+            </Header>
+            <Layout>
+              <Sider width={200} style={{ background:'transparent' }} className="desktop-only">
+                <Menu mode="inline" selectedKeys={[currentView]} items={[
+                  { key:'dashboard', icon:<AppstoreOutlined />, label:'Dashboard' },
+                  { key:'ledger', icon:<DatabaseOutlined />, label:'Ledger' },
+                  { key:'merchants', icon:<ShopOutlined />, label:'Merchants' },
+                  { key:'create_qr', icon:<QrcodeOutlined />, label:'Test QR' },
+                  { key:'api_docs', icon:<ApiOutlined />, label:'API Docs' },
+                  { key:'settings', icon:<SettingOutlined />, label:'Settings' },
+                  { key:'logs', icon:<LineChartOutlined />, label:'Traffic' },
+                ]} onClick={e=>setCurrentView(e.key)} style={{ background:'transparent', border:'none' }} />
+              </Sider>
+              <Content className="mobile-padding" style={{ padding:'24px', overflowX:'hidden' }}>
+
+                {currentView==='dashboard' && (
+                  <div>
+                    <Card className="glass-card" style={{ marginBottom:20 }}>
+                      <Row justify="space-between" align="middle">
+                        <Col><Space><span className="live-dot"></span><Text strong style={{fontSize:18}}>Live system · {lastSyncedTime}</Text><Tag color={dashboardData.system_metrics?.browser?.is_running?'green':'orange'}>{dashboardData.system_metrics?.browser?.is_running?'Engine online':'Standby'}</Tag></Space></Col>
+                        <Col><Switch checked={liveAutoRefresh} onChange={setLiveAutoRefresh} checkedChildren="Live" unCheckedChildren="Paused" /><Button icon={<ReloadOutlined />} onClick={fetchDashboard} style={{marginLeft:8}}>Refresh</Button></Col>
+                      </Row>
+                    </Card>
+                    <Row gutter={[16,16]} style={{marginBottom:24}}>
+                      {[
+                        { title:'CPU Load', value:dashboardData.system_metrics?.cpu?.percent+'%', icon:<ThunderboltOutlined />, color:'#fa8c16', bg:'rgba(250,140,22,0.1)' },
+                        { title:'RAM', value:dashboardData.system_metrics?.ram?.percent+'%', icon:<CloudServerOutlined />, color:'#1677ff', bg:'rgba(22,119,255,0.1)' },
+                        { title:'Storage', value:dashboardData.system_metrics?.storage?.percent+'%', icon:<HddOutlined />, color:'#722ed1', bg:'rgba(114,46,209,0.1)' },
+                        { title:'Active Tasks', value:dashboardData.system_metrics?.browser?.active_contexts||0, icon:<DashboardOutlined />, color:'#52c41a', bg:'rgba(82,196,26,0.1)' }
+                      ].map((item,i) => (
+                        <Col xs={12} sm={6} key={i}>
+                          <Card className="glass-card" bordered={false} style={{padding:'8px 12px'}}>
+                            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                              <div><Text type="secondary" style={{fontSize:12}}>{item.title}</Text><div style={{fontSize:24, fontWeight:700}}>{item.value}</div></div>
+                              <div style={{width:40,height:40, borderRadius:12, background:item.bg, color:item.color, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20}}>{item.icon}</div>
+                            </div>
+                          </Card>
+                        </Col>
+                      ))}
+                    </Row>
+                    <Row gutter={[16,16]} style={{marginBottom:24}}>
+                      <Col xs={12} sm={6}><Card className="glass-card"><Statistic title="Total Orders" value={dashboardData.total_orders} prefix={<DatabaseOutlined />} /></Card></Col>
+                      <Col xs={12} sm={6}><Card className="glass-card"><Statistic title="Success" value={dashboardData.success_orders} valueStyle={{color:'#3f8600'}} prefix={<CheckCircleOutlined />} /></Card></Col>
+                      <Col xs={12} sm={6}><Card className="glass-card"><Statistic title="Revenue USD" value={dashboardData.total_revenue_usd} precision={2} prefix="$" /></Card></Col>
+                      <Col xs={12} sm={6}><Card className="glass-card"><Statistic title="Revenue KHR" value={dashboardData.total_revenue_khr} prefix="៛" /></Card></Col>
+                    </Row>
+                    <Card className="glass-card" title={<Space><SyncOutlined spin={liveAutoRefresh} /> Real-time tasks</Space>} extra={<Space><Select value={taskStatusFilter} onChange={setTaskStatusFilter} options={[{value:'ALL',label:'All'},{value:'PENDING',label:'Processing'},{value:'SUCCESS',label:'Success'},{value:'EXPIRED',label:'Expired'},{value:'FAILED',label:'Failed'}]} style={{width:120}} /><Input.Search placeholder="Search" value={taskSearchText} onChange={e=>setTaskSearchText(e.target.value)} style={{width:160}} /></Space>}>
+                      <Table dataSource={(dashboardData.recent_tasks||[]).filter(t=>taskStatusFilter==='ALL'||t.status===taskStatusFilter).filter(t=>taskSearchText?String(t.id).includes(taskSearchText)||(t.merchant_name||'').toLowerCase().includes(taskSearchText.toLowerCase()):true)} columns={[
+                        { title:'ID', dataIndex:'id', render:i=><Tag color="blue">#{i}</Tag> },
+                        { title:'Status', dataIndex:'status', render:s=><Tag icon={s==='PENDING'?<SyncOutlined spin/>:s==='SUCCESS'?<CheckCircleOutlined/>:s==='EXPIRED'?<ClockCircleOutlined/>:<CloseCircleOutlined/>} color={s==='PENDING'?'processing':s==='SUCCESS'?'success':s==='EXPIRED'?'warning':'error'}>{s}</Tag> },
+                        { title:'Merchant', render:(_,r)=><div><Text strong>{r.merchant_name}</Text><div style={{fontSize:11,color:'#888'}}>{r.code_merchant}</div></div> },
+                        { title:'Amount', render:(_,r)=><Text strong>{parseFloat(r.amount||0).toFixed(2)} {r.currency}</Text> },
+                        { title:'Time', dataIndex:'updated_at', render:d=>formatUTC(d) }
+                      ]} rowKey="id" pagination={{pageSize:5}} size="middle" />
+                    </Card>
+                  </div>
+                )}
+
+                {currentView==='ledger' && (
+                  <div>
+                    <Card className="glass-card" style={{marginBottom:16}}>
+                      <Space wrap><Input placeholder="Search" value={ledgerFilters.search} onChange={e=>setLedgerFilters({...ledgerFilters,search:e.target.value})} style={{width:160}} onPressEnter={fetchLedger} /><Select value={ledgerFilters.status} onChange={v=>setLedgerFilters({...ledgerFilters,status:v})} options={[{value:'ALL',label:'ALL'},{value:'PENDING',label:'PENDING'},{value:'SUCCESS',label:'SUCCESS'},{value:'FAILED',label:'FAILED'},{value:'EXPIRED',label:'EXPIRED'}]} style={{width:120}} /><Select value={ledgerFilters.merchant_name} onChange={v=>setLedgerFilters({...ledgerFilters,merchant_name:v})} style={{width:160}}><Select.Option value="ALL">All merchants</Select.Option>{availableMerchants.map(m=><Select.Option key={m} value={m}>{m}</Select.Option>)}</Select><DatePicker.RangePicker onChange={(d)=>d?setLedgerFilters({...ledgerFilters,start_date:d[0].toISOString(),end_date:d[1].toISOString()}):setLedgerFilters({...ledgerFilters,start_date:'',end_date:''})} /><Button type="primary" onClick={fetchLedger}>Apply</Button><Button onClick={()=>setLedgerFilters({start_date:'',end_date:'',status:'ALL',merchant_name:'ALL',search:''})}>Clear</Button></Space>
+                    </Card>
+                    <Card className="glass-card" title="Transactions" extra={<Space><Button icon={<DownloadOutlined />} onClick={exportToExcel}>Excel</Button><Button icon={<DownloadOutlined />} onClick={exportToPDF}>PDF</Button></Space>}>
+                      <Table dataSource={data.orders} columns={ledgerColumns} rowKey="id" loading={loading} pagination={{pageSize:10}} scroll={{x:700}} />
+                    </Card>
+                  </div>
+                )}
+
+                {currentView==='merchants' && (
+                  <Card className="glass-card" title="Merchants" extra={<Space><Button type="primary" icon={<PlusOutlined />} onClick={()=>{setEditingMerchant(null); form.resetFields(); setIsModalVisible(true);}}>Add</Button></Space>}>
+                    <Table dataSource={data.merchants} columns={merchantColumns} rowKey="code_merchant" loading={loading} pagination={{pageSize:10}} />
+                  </Card>
+                )}
+
+                {currentView==='create_qr' && (
+                  <Card className="glass-card" title="Generate QR code" bordered={false}>
+                    <Row gutter={24}>
+                      <Col xs={24} md={12}>
+                        <Form layout="vertical" onFinish={(v)=>{
+                          setLoading(true); setQrResult(null); setActiveApiKey(v.api_key);
+                          fetch('/api/v1/payment/create', { method:'POST', headers:{'Content-Type':'application/json','X-API-Key':v.api_key}, body:JSON.stringify({amount:v.amount, currency:v.currency, code_merchant:v.code_merchant}) })
+                          .then(res=>res.json()).then(json=>{ setLoading(false); if(json.detail) message.error(json.detail); else { message.success('QR ready'); setQrResult(json.invoice_id); setCountdown(120); } }).catch(()=>{setLoading(false); message.error('Failed');});
+                        }}>
+                          <Form.Item label="Merchant" name="code_merchant" rules={[{required:true}]}><Select placeholder="Select merchant">{(data.merchants||[]).filter(m=>m.status==='ACTIVE').map(m=><Select.Option key={m.code_merchant} value={m.code_merchant}>{m.name}</Select.Option>)}</Select></Form.Item>
+                          <Form.Item label="Currency" name="currency" initialValue="USD"><Select><Select.Option value="USD">USD</Select.Option><Select.Option value="KHR">KHR</Select.Option></Select></Form.Item>
+                          <Form.Item label="Amount" name="amount" rules={[{required:true}]}><Input type="number" step="0.01" placeholder="0.00" /></Form.Item>
+                          <Form.Item label="API Key" name="api_key" rules={[{required:true}]}><Select placeholder="Select key">{(data.api_keys||[]).filter(k=>k.status==='ACTIVE').map(k=><Select.Option key={k.key_value} value={k.key_value}>{k.name}</Select.Option>)}</Select></Form.Item>
+                          <Button type="primary" htmlType="submit" loading={loading} block size="large" style={{borderRadius:16}}>Generate</Button>
+                        </Form>
+                      </Col>
+                      <Col xs={24} md={12}>
+                        <div style={{textAlign:'center'}}>
+                          <Title level={5}>QR preview {countdown>0&&<span style={{color:'#ff4d4f'}}>({Math.floor(countdown/60)}:{String(countdown%60).padStart(2,'0')})</span>}</Title>
+                          {qrResult ? <iframe src={`/api/v1/payment/qr-code/verify/${qrResult}`} style={{width:'100%',height:480,border:'none',borderRadius:16,background:'rgba(255,255,255,0.4)'}} /> : <div style={{height:480, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(255,255,255,0.2)', borderRadius:16}}><QrcodeOutlined style={{fontSize:48,color:'#bbb'}} /></div>}
+                        </div>
+                      </Col>
+                    </Row>
+                  </Card>
+                )}
+
+                {currentView==='api_docs' && (
+                  <Card className="glass-card" title={<Space><ApiOutlined /> API Documentation</Space>}>
+                    <Title level={5}>Authentication</Title>
+                    <pre style={{background:'rgba(0,0,0,0.05)', padding:12, borderRadius:8}}>X-API-Key: YOUR_API_KEY</pre>
+                    <Title level={5}>Endpoints</Title>
+                    <Card size="small" title={<Tag color="blue">POST</Tag>} extra="/api/v1/payment/create" style={{marginBottom:12}}><Text>Create invoice. Body: {`{ "code_merchant": "...", "amount": "...", "currency": "USD/KHR" }`}</Text></Card>
+                    <Card size="small" title={<Tag color="green">GET</Tag>} extra="/api/v1/payment/verify/{id}" style={{marginBottom:12}}><Text>Verify payment status (JSON).</Text></Card>
+                    <Card size="small" title={<Tag color="green">GET</Tag>} extra="/api/v1/payment/qr-code/verify/{id}"><Text>HTML QR card (auto-update).</Text></Card>
+                    <Divider />
+                    <Title level={5}>Live test</Title>
+                    <Space><Select value={selectedEndpoint} onChange={setSelectedEndpoint} options={[{value:'create',label:'POST /create'},{value:'verify_json',label:'GET /verify'},{value:'verify_html',label:'GET /qr/verify'}]} style={{width:200}} /><Select placeholder="API Key" value={selectedApiToken} onChange={setSelectedApiToken} style={{width:160}}>{(data.api_keys||[]).filter(k=>k.status==='ACTIVE').map(k=><Select.Option key={k.key_value} value={k.key_value}>{k.name}</Select.Option>)}</Select></Space>
+                    <div style={{marginTop:16}}>
+                      {selectedEndpoint==='create' && <><Input.TextArea rows={4} value={testPayload} onChange={e=>setTestPayload(e.target.value)} style={{marginBottom:8}} /><Button type="primary" loading={isTesting} onClick={()=>{setIsTesting(true); fetch('/api/v1/payment/create',{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':selectedApiToken},body:testPayload}).then(r=>r.json()).then(d=>{setTestResults({create:d}); message.success('Done'); setIsTesting(false);}).catch(()=>setIsTesting(false));}}>Send</Button></>}
+                      {selectedEndpoint==='verify_json' && <><Input value={testInvoiceId} onChange={e=>setTestInvoiceId(e.target.value)} style={{marginBottom:8,width:200}} /><Button type="primary" loading={isTesting} onClick={()=>{setIsTesting(true); fetch(`/api/v1/payment/verify/${testInvoiceId}`,{headers:{'X-API-Key':selectedApiToken}}).then(r=>r.json()).then(d=>{setTestResults({verify_json:d}); message.success('Done'); setIsTesting(false);}).catch(()=>setIsTesting(false));}}>Verify</Button></>}
+                      {selectedEndpoint==='verify_html' && <><Input value={testInvoiceId} onChange={e=>setTestInvoiceId(e.target.value)} style={{marginBottom:8,width:200}} /><Button type="primary" onClick={()=>window.open(`/api/v1/payment/qr-code/verify/${testInvoiceId}`,'_blank')}>Open QR</Button></>}
+                      {testResults[selectedEndpoint==='create'?'create':selectedEndpoint==='verify_json'?'verify_json':null] && <pre style={{background:'rgba(0,0,0,0.05)', padding:12, borderRadius:8, marginTop:12}}>{JSON.stringify(testResults[selectedEndpoint==='create'?'create':'verify_json'], null, 2)}</pre>}
+                    </div>
+                  </Card>
+                )}
+
+                {currentView==='settings' && (
+                  <Space direction="vertical" size="large" style={{display:'flex'}}>
+                    <Card className="glass-card" title="System"><Statistic title="Database size" value={formatBytes(settings.db_size_bytes)} /></Card>
+                    <Card className="glass-card" title="Telegram alerts" extra={<Switch checked={settings.telegram_enabled} onChange={c=>setSettings({...settings,telegram_enabled:c})} />}>
+                      <Form layout="vertical"><Form.Item label="Bot token"><Input.Password value={settings.telegram_bot_token} onChange={e=>setSettings({...settings,telegram_bot_token:e.target.value})} addonAfter={<Button loading={fetchingChats} onClick={()=>{if(!settings.telegram_bot_token) return message.warning('Enter token'); setFetchingChats(true); fetch('/api/v1/admin/telegram/get-chats',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Basic ${token}`},body:JSON.stringify({bot_token:settings.telegram_bot_token})}).then(r=>r.json()).then(d=>{setBotProfile(d.bot); setDetectedChats(d.chats||[]); message.success(`Found ${(d.chats||[]).length} chats`); setFetchingChats(false);}).catch(()=>setFetchingChats(false));}}>Fetch</Button>} /></Form.Item>
+                        <Form.Item label="Chat ID"><Input value={settings.telegram_chat_id} onChange={e=>setSettings({...settings,telegram_chat_id:e.target.value})} placeholder="-1001234567890" /></Form.Item>
+                        <Space><Button type="primary" onClick={()=>{fetch('/api/v1/admin/settings',{method:'PUT',headers:{'Content-Type':'application/json','Authorization':`Basic ${token}`},body:JSON.stringify(settings)}).then(()=>message.success('Saved'));}}>Save</Button><Button onClick={()=>{if(!settings.telegram_bot_token||!settings.telegram_chat_id) return message.warning('Fill token & chat id'); setTestingTelegram(true); fetch('/api/v1/admin/telegram/test',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Basic ${token}`},body:JSON.stringify({bot_token:settings.telegram_bot_token,chat_id:settings.telegram_chat_id})}).then(()=>{message.success('Test sent'); setTestingTelegram(false);}).catch(()=>setTestingTelegram(false));}} loading={testingTelegram}>Test</Button></Space>
+                      </Form>
+                    </Card>
+                    <Card className="glass-card" title="API Keys" extra={<Button type="primary" icon={<PlusOutlined />} onClick={()=>{setEditingApiKey(null); apiForm.resetFields(); setIsApiKeyModalVisible(true);}}>Add</Button>}>
+                      <Table dataSource={data.api_keys} columns={apiKeyColumns} rowKey="id" pagination={{pageSize:5}} />
+                    </Card>
+                  </Space>
+                )}
+
+                {currentView==='logs' && (
+                  <div>
+                    <Row gutter={[16,16]} style={{marginBottom:16}}>
+                      <Col xs={12} sm={6}><Card className="glass-card"><Statistic title="Requests" value={analytics.summary.total_requests} /></Card></Col>
+                      <Col xs={12} sm={6}><Card className="glass-card"><Statistic title="Top token" value={analytics.summary.token_usage?.[0]?.token_name||'-'} suffix={analytics.summary.token_usage?.[0]?.count?`(${analytics.summary.token_usage[0].count})`:''} /></Card></Col>
+                      <Col xs={12} sm={6}><Card className="glass-card"><Statistic title="IPs" value={analytics.summary.total_ips} /></Card></Col>
+                      <Col xs={12} sm={6}><Card className="glass-card"><Statistic title="Top country" value={analytics.summary.country_usage?.[0]?.country||'-'} suffix={analytics.summary.country_usage?.[0]?.count?`(${analytics.summary.country_usage[0].count})`:''} /></Card></Col>
+                    </Row>
+                    <Card className="glass-card" style={{marginBottom:16}}>
+                      <Space wrap><Input placeholder="Search" value={analyticsFilters.search} onChange={e=>setAnalyticsFilters({...analyticsFilters,search:e.target.value})} style={{width:160}} onPressEnter={fetchAnalytics} /><Select value={analyticsFilters.method} onChange={v=>setAnalyticsFilters({...analyticsFilters,method:v})} options={[{value:'ALL',label:'ALL'},{value:'GET',label:'GET'},{value:'POST',label:'POST'}]} style={{width:100}} /><Select value={analyticsFilters.country} onChange={v=>setAnalyticsFilters({...analyticsFilters,country:v})} style={{width:140}}><Select.Option value="ALL">ALL</Select.Option>{analytics.available_countries.map(c=><Select.Option key={c} value={c}>{c}</Select.Option>)}</Select><DatePicker.RangePicker onChange={(d)=>d?setAnalyticsFilters({...analyticsFilters,start_date:d[0].toISOString(),end_date:d[1].toISOString()}):setAnalyticsFilters({...analyticsFilters,start_date:'',end_date:''})} /><Button type="primary" onClick={fetchAnalytics}>Apply</Button><Button onClick={()=>setAnalyticsFilters({start_date:'',end_date:'',method:'ALL',country:'ALL',search:''})}>Clear</Button></Space>
+                    </Card>
+                    <Card className="glass-card" title="Traffic logs">
+                      <Table dataSource={analytics.logs} columns={[
+                        { title:'Time', dataIndex:'created_at', render:d=>formatUTC(d) },
+                        { title:'Method', dataIndex:'method', render:m=><Tag color={m==='GET'?'blue':m==='POST'?'green':'orange'}>{m}</Tag> },
+                        { title:'Endpoint', dataIndex:'endpoint' },
+                        { title:'IP', dataIndex:'ip_address' },
+                        { title:'Country', dataIndex:'country' }
+                      ]} rowKey="id" pagination={{pageSize:10}} loading={loading} />
+                    </Card>
+                  </div>
+                )}
+
+              </Content>
+            </Layout>
+            <Footer style={{textAlign:'center', color:'#888', background:'transparent'}}>PayWay · glass edition</Footer>
+          </Layout>
+
+          <div className="mobile-bottom-nav">
+            {['dashboard','ledger','merchants','create_qr','api_docs','settings','logs'].map(key => (
+              <div key={key} className={`mobile-nav-item ${currentView===key?'active':''}`} onClick={()=>setCurrentView(key)}>
+                {key==='dashboard'&&<AppstoreOutlined />}{key==='ledger'&&<DatabaseOutlined />}{key==='merchants'&&<ShopOutlined />}{key==='create_qr'&&<QrcodeOutlined />}{key==='api_docs'&&<ApiOutlined />}{key==='settings'&&<SettingOutlined />}{key==='logs'&&<LineChartOutlined />}
+                <span>{key.charAt(0).toUpperCase()+key.slice(1).replace('_',' ')}</span>
+              </div>
+            ))}
+          </div>
+
+          <Modal title={editingMerchant?'Edit merchant':'Add merchant'} open={isModalVisible} onCancel={()=>setIsModalVisible(false)} footer={null}>
+            <Form form={form} layout="vertical" onFinish={(v)=>{fetch('/api/v1/admin/merchants'+(editingMerchant?`/${editingMerchant.code_merchant}`:''),{method:editingMerchant?'PUT':'POST',headers:{'Content-Type':'application/json','Authorization':`Basic ${token}`},body:JSON.stringify(v)}).then(()=>{message.success('Saved'); setIsModalVisible(false); fetchData();});}}>
+              <Form.Item label="Code" name="code_merchant" rules={[{required:true}]}><Input disabled={!!editingMerchant} /></Form.Item>
+              <Form.Item label="Name" name="name" rules={[{required:true}]}><Input /></Form.Item>
+              <Form.Item label="Description" name="description"><Input.TextArea /></Form.Item>
+              <Form.Item label="KHR link" name="payment_link_khr" rules={[{required:true}]}><Input /></Form.Item>
+              <Form.Item label="USD link" name="payment_link_usd" rules={[{required:true}]}><Input /></Form.Item>
+              <Form.Item label="🤖 Telegram Chat ID (Optional)" name="telegram_chat_id" extra="Comma-separated IDs (e.g. -1001234567890). Leave empty to use global setting.">
+                <Input placeholder="e.g. -1001234567890" style={{ fontFamily: 'monospace' }} />
+              </Form.Item>
+              {editingMerchant&&<Form.Item label="Status" name="status"><Select><Select.Option value="ACTIVE">ACTIVE</Select.Option><Select.Option value="INACTIVE">INACTIVE</Select.Option></Select></Form.Item>}
+              <Button type="primary" htmlType="submit">Submit</Button>
+            </Form>
+          </Modal>
+          <Modal title="API Key" open={isApiKeyModalVisible} onCancel={()=>setIsApiKeyModalVisible(false)} footer={null}>
+            <Form form={apiForm} layout="vertical" onFinish={(v)=>{fetch('/api/v1/admin/apikeys'+(editingApiKey?`/${editingApiKey.id}`:''),{method:editingApiKey?'PUT':'POST',headers:{'Content-Type':'application/json','Authorization':`Basic ${token}`},body:JSON.stringify(v)}).then(()=>{message.success('Saved'); setIsApiKeyModalVisible(false); fetchData();});}}>
+              <Form.Item label="Name" name="name" rules={[{required:true}]}><Input /></Form.Item>
+              <Form.Item label="Description" name="description"><Input.TextArea /></Form.Item>
+              {editingApiKey&&<Form.Item label="Status" name="status"><Select><Select.Option value="ACTIVE">ACTIVE</Select.Option><Select.Option value="REVOKED">REVOKED</Select.Option></Select></Form.Item>}
+              <Button type="primary" htmlType="submit">Submit</Button>
+            </Form>
+          </Modal>
+        </ConfigProvider>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

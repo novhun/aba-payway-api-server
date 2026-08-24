@@ -1384,6 +1384,24 @@ echo $result;
                 <Title level={4} style={{ margin: 0, fontSize: 'clamp(16px, 4vw, 20px)' }}>{t.title || 'PayWay Admin'}</Title>
               </div>
               <Space size="small">
+                <Button 
+                  size="small" 
+                  type="primary" 
+                  ghost 
+                  style={{ borderRadius: 8 }}
+                  onClick={() => window.location.href='/ui/2'}
+                >
+                  ✨ Glass (v2)
+                </Button>
+                <Button 
+                  size="small" 
+                  type="primary" 
+                  ghost 
+                  style={{ borderRadius: 8 }}
+                  onClick={() => window.location.href='/ui/3'}
+                >
+                  💎 Fintech (v3)
+                </Button>
                 <input 
                   type="color" 
                   value={primaryColor} 

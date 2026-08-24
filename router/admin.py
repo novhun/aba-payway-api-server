@@ -137,6 +137,24 @@ def get_current_admin(credentials: HTTPBasicCredentials = Depends(security)):
 async def admin_dashboard_ui():
     return FileResponse("static/index.html")
 
+@router.api_route("/ui/2", methods=["GET", "HEAD"], response_class=FileResponse)
+@router.api_route("/ui/v2", methods=["GET", "HEAD"], response_class=FileResponse)
+@router.api_route("/ui/version2", methods=["GET", "HEAD"], response_class=FileResponse)
+@router.api_route("/v2", methods=["GET", "HEAD"], response_class=FileResponse)
+async def admin_dashboard_ui_v2():
+    if os.path.exists("static/ui/version2.html"):
+        return FileResponse("static/ui/version2.html")
+    return FileResponse("static/index.html")
+
+@router.api_route("/ui/3", methods=["GET", "HEAD"], response_class=FileResponse)
+@router.api_route("/ui/v3", methods=["GET", "HEAD"], response_class=FileResponse)
+@router.api_route("/ui/version3", methods=["GET", "HEAD"], response_class=FileResponse)
+@router.api_route("/v3", methods=["GET", "HEAD"], response_class=FileResponse)
+async def admin_dashboard_ui_v3():
+    if os.path.exists("static/ui/version3.html"):
+        return FileResponse("static/ui/version3.html")
+    return FileResponse("static/index.html")
+
 @router.get("/api/v1/admin/data")
 async def get_admin_data(admin: str = Depends(get_current_admin)):
     async with async_session() as db:
