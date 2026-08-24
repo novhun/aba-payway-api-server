@@ -52,39 +52,25 @@ async def init_browser():
 
         launch_args = [
             "--disable-blink-features=AutomationControlled",
-            "--disable-gpu",                                         # Disable Hardware Acceleration (Crucial for 1-core VPS)
-            "--no-sandbox",                                          # Reduce OS sandbox overhead
+            "--disable-gpu",                                         # Disable GPU hardware acceleration
+            "--no-sandbox",                                          # Low overhead on Linux
             "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage",                               # Prevent crashes on low RAM VPS
+            "--disable-dev-shm-usage",                               # Prevent /dev/shm OOM on small VPS
             "--disable-accelerated-2d-canvas",
-            "--disable-animations",                                  # Disable animations to save CPU
-            "--disable-web-security",                                # Reduce security calculation overhead
-            "--renderer-process-limit=2",                            # Limit renderer child processes on 1-core VPS
-            "--disable-software-rasterizer",                         # Disable CPU-based raster rendering
-            "--disable-dev-tools",
-            "--disable-logging",
-            "--disable-infobars",
-            "--disable-features=IsolateOrigins,site-per-process,TranslateUI,BlinkGenPropertyTrees,AudioServiceOutOfProcess", # Save CPU threads
-            "--disable-background-networking",                       # Stop background networking
-            "--disable-background-timer-throttling",
-            "--disable-backgrounding-occluded-windows",
-            "--disable-breakpad",
-            "--disable-client-side-phishing-detection",
-            "--disable-component-update",
-            "--disable-default-apps",
-            "--disable-domain-reliability",
+            "--disable-web-security",
             "--disable-extensions",
+            "--disable-default-apps",
+            "--disable-sync",
+            "--disable-background-networking",
+            "--disable-component-update",
+            "--disable-domain-reliability",
+            "--disable-client-side-phishing-detection",
             "--disable-hang-monitor",
-            "--disable-ipc-flooding-protection",
             "--disable-popup-blocking",
             "--disable-prompt-on-repost",
-            "--disable-renderer-backgrounding",
-            "--disable-sync",
-            "--metrics-recording-only",
             "--mute-audio",
-            "--no-default-browser-check",
             "--no-first-run",
-            "--no-zygote",
+            "--no-default-browser-check",
             "--password-store=basic",
             "--use-mock-keychain",
             "--js-flags=--max-old-space-size=128"                    # Restrict V8 JS heap memory

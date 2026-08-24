@@ -23,7 +23,8 @@ from service.playwright_worker import get_browser_stats
 def get_system_metrics() -> dict:
     """Calculates live host and process metrics: CPU, RAM, Storage, Process Memory and Browser stats."""
     try:
-        cpu_percent = psutil.cpu_percent(interval=None)
+        # Sample CPU over 0.05s window to provide an accurate, non-spiking reading
+        cpu_percent = psutil.cpu_percent(interval=0.05)
         cpu_count = psutil.cpu_count(logical=True) or 1
         mem = psutil.virtual_memory()
         disk = psutil.disk_usage(os.getcwd())
