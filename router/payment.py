@@ -114,35 +114,106 @@ async def fetch_invoice_status_qr(invoice_id: int):
         """
 
     if status == "SUCCESS":
-        return f"""
-        <div style="font-family: sans-serif; text-align: center; padding: 40px; max-width: 350px; margin: auto; background: #fff; border-radius: 24px; border: 1px solid #e0e0e0;">
-            <div style="font-size: 56px; color: #3caf47;">✓</div>
-            <h2 style="color: #333; margin-top: 10px;">
-                ការទូទាត់ទទួលបានជោគជ័យ!<br>
-                Payment Verified!
-            </h2>
-            <p style="color: #666; line-height: 1.5;">
-                សូមអរគុណ! ការទូទាត់ចំនួន <b>{float(amount):,.2f} {currency}</b> ត្រូវបានផ្ទេរទៅកាន់ <b>{merchant_name}</b>។<br>
-                Thank you. Your payment of <b>{float(amount):,.2f} {currency}</b> has been credited to <b>{merchant_name}</b>.
-            </p>
-        </div>
-        """
+        return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful - {merchant_name}</title>
+    <style>
+        body {{
+            background: #f4f6f8;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 10px;
+            box-sizing: border-box;
+        }}
+        .status-card {{
+            width: 100%;
+            max-width: 360px;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+            border: 1px solid #f0f0f0;
+            padding: 40px 24px;
+            text-align: center;
+            box-sizing: border-box;
+        }}
+    </style>
+</head>
+<body>
+    <div class="status-card">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto 16px auto; display: block;">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="9 12 11.5 14.5 16 9.5"></polyline>
+        </svg>
+        <h2 style="color: #1e293b; margin: 0 0 10px 0; font-size: 20px;">
+            ការទូទាត់ទទួលបានជោគជ័យ<br>
+            Payment Verified
+        </h2>
+        <p style="color: #64748b; font-size: 14px; line-height: 1.5; margin: 0;">
+            សូមអរគុណ! ការទូទាត់ចំនួន <b style="color: #0f172a;">{float(amount):,.2f} {currency}</b> ត្រូវបានផ្ទេរទៅកាន់ <b style="color: #0f172a;">{merchant_name}</b>។<br>
+            Thank you. Your payment of <b style="color: #0f172a;">{float(amount):,.2f} {currency}</b> has been credited to <b style="color: #0f172a;">{merchant_name}</b>.
+        </p>
+    </div>
+</body>
+</html>"""
 
     if status == "EXPIRED" or status == "FAILED":
         khmer_status = "ផុតកំណត់" if status == "EXPIRED" else "បរាជ័យ"
-        return f"""
-        <div style="font-family: sans-serif; text-align: center; padding: 40px; max-width: 350px; margin: auto; background: #fff; border-radius: 24px; border: 1px solid #e0e0e0;">
-            <div style="font-size: 56px; color: #ed1116;">✗</div>
-            <h2 style="color: #333; margin-top: 10px;">
-                ការទូទាត់{khmer_status}<br>
-                Payment {status.capitalize()}
-            </h2>
-            <p style="color: #666; line-height: 1.5;">
-                កូដ QR នេះលែងមានសុពលភាពហើយ។ សូមបង្កើតថ្មីមួយទៀត។<br>
-                This QR code is no longer valid. Please generate a new one.
-            </p>
-        </div>
-        """
+        return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment {status.capitalize()} - {merchant_name}</title>
+    <style>
+        body {{
+            background: #f4f6f8;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 10px;
+            box-sizing: border-box;
+        }}
+        .status-card {{
+            width: 100%;
+            max-width: 360px;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+            border: 1px solid #f0f0f0;
+            padding: 40px 24px;
+            text-align: center;
+            box-sizing: border-box;
+        }}
+    </style>
+</head>
+<body>
+    <div class="status-card">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ed1116" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto 16px auto; display: block;">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+        <h2 style="color: #1e293b; margin: 0 0 10px 0; font-size: 20px;">
+            ការទូទាត់{khmer_status}<br>
+            Payment {status.capitalize()}
+        </h2>
+        <p style="color: #64748b; font-size: 14px; line-height: 1.5; margin: 0;">
+            កូដ QR នេះលែងមានសុពលភាពហើយ។ សូមបង្កើតថ្មីមួយទៀត។<br>
+            This QR code is no longer valid. Please generate a new one.
+        </p>
+    </div>
+</body>
+</html>"""
 
     qr_base64 = generate_qr_base64(khqr_data)
     encoded_khqr = urllib.parse.quote(khqr_data)
@@ -324,6 +395,17 @@ async def fetch_invoice_status_qr(invoice_id: int):
                 window.location.href = "abamobilebank://ababank.com?type=payway&qrcode=" + encodedKhqr;
             }}
         }}
+
+        setInterval(function() {{
+            fetch(window.location.href)
+                .then(function(res) {{ return res.text(); }})
+                .then(function(html) {{
+                    if (html.indexOf('Payment Verified') !== -1 || html.indexOf('Payment Expired') !== -1) {{
+                        window.location.reload();
+                    }}
+                }})
+                .catch(function() {{}});
+        }}, 3000);
     </script>
 </body>
 </html>
