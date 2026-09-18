@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks
-from fastapi.responses import HTMLResponse
+from typing import Optional
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Request, Depends
+from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy import select
 
 from schema.payment import CheckoutRequest
@@ -79,8 +80,8 @@ async def fetch_invoice_status_api(invoice_id: int):
             }
     raise HTTPException(status_code=404, detail="Order reference identifier not located.")
 
-@router.get("/qr-code/verify/{invoice_id}", response_class=HTMLResponse)
-async def fetch_invoice_status_qr(invoice_id: int):
+@router.get("/qr-code/verify/{invoice_id}")
+async def fetch_invoice_status_qr(invoice_id: int, request: Request, format: Optional[str] = None):
     async with async_session() as db:
         result = await db.execute(select(OrderTracking).where(OrderTracking.id == invoice_id))
         order = result.scalar_one_or_none()
@@ -94,8 +95,27 @@ async def fetch_invoice_status_qr(invoice_id: int):
     khqr_data = order.khqr_data
     merchant_name = order.merchant_name
 
+    encoded_khqr = urllib.parse.quote(khqr_data) if khqr_data else ""
+    aba_deeplink = f"abamobilebank://ababank.com?type=payway&qrcode={encoded_khqr}" if khqr_data else None
+    bakong_deeplink = f"bakong://qr?data={encoded_khqr}" if khqr_data else None
+
+    # Support direct JSON for native Flutter apps, PHP cURL, or API integrations
+    if format == "json" or "application/json" in request.headers.get("accept", ""):
+        return JSONResponse({
+            "invoice_id": order.id,
+            "amount": amount,
+            "currency": currency,
+            "status": status,
+            "merchant_name": merchant_name,
+            "khqr": khqr_data,
+            "qr_image": generate_qr_base64(khqr_data) if khqr_data else None,
+            "aba_deeplink": aba_deeplink,
+            "bakong_deeplink": bakong_deeplink,
+            "receipt": order.receipt_link
+        })
+
     if not khqr_data:
-        return """
+        return HTMLResponse("""
         <html>
         <head>
             <meta http-equiv="refresh" content="3">
@@ -111,7 +131,7 @@ async def fetch_invoice_status_qr(invoice_id: int):
             </p>
         </body>
         </html>
-        """
+        """)
 
     if status == "SUCCESS":
         return f"""<!DOCTYPE html>
@@ -231,13 +251,13 @@ async def fetch_invoice_status_qr(invoice_id: int):
             padding: 0;
         }}
         body {{
-            background: #f4f6f8;
+            background: transparent;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 20px 10px;
+            padding: 10px;
         }}
         .payment-card {{
             display: block;
@@ -371,10 +391,10 @@ async def fetch_invoice_status_qr(invoice_id: int):
             </div>
 
             <div class="btn-group">
-                <button class="btn-primary" onclick="openAbaApp()">
+                <a class="btn-primary" id="abaBtn" href="{aba_deeplink}" target="_top" onclick="handleAbaClick(event)">
                     Open ABA Mobile
-                </button>
-                <a class="btn-secondary" href="{qr_base64}" download="khqr_{invoice_id}.png">
+                </a>
+                <a class="btn-secondary" href="{qr_base64}" download="khqr_{invoice_id}.png" target="_blank">
                     Save QR
                 </a>
             </div>
@@ -387,14 +407,36 @@ async def fetch_invoice_status_qr(invoice_id: int):
 
     <script>
         var encodedKhqr = "{encoded_khqr}";
+        var rawKhqr = "{khqr_data}";
+        var isAndroid = /android/i.test(navigator.userAgent);
+        var abaDeeplink = isAndroid
+            ? "intent://ababank.com?type=payway&qrcode=" + encodedKhqr + "#Intent;scheme=abamobilebank;package=com.ababank.mobile;end"
+            : "abamobilebank://ababank.com?type=payway&qrcode=" + encodedKhqr;
 
-        function openAbaApp() {{
-            var isAndroid = /android/i.test(navigator.userAgent);
-            if (isAndroid) {{
-                window.location.href = "intent://ababank.com?type=payway&qrcode=" + encodedKhqr + "#Intent;scheme=abamobilebank;package=com.ababank.mobile;end";
-            }} else {{
-                window.location.href = "abamobilebank://ababank.com?type=payway&qrcode=" + encodedKhqr;
-            }}
+        var abaBtn = document.getElementById('abaBtn');
+        if (abaBtn && isAndroid) {{
+            abaBtn.href = abaDeeplink;
+        }}
+
+        function handleAbaClick(e) {{
+            // 1. Post message to parent window (Flutter Web / PHP iframe parent)
+            try {{
+                if (window.parent && window.parent !== window) {{
+                    window.parent.postMessage({{
+                        type: 'ABA_PAYWAY_DEEPLINK',
+                        action: 'open_aba',
+                        deeplink: abaDeeplink,
+                        khqr: rawKhqr
+                    }}, '*');
+                }}
+            }} catch (err) {{}}
+
+            // 2. Break out of iframe via top-level window
+            try {{
+                if (window.top && window.top !== window) {{
+                    window.top.location.href = abaDeeplink;
+                }}
+            }} catch (err) {{}}
         }}
 
         setInterval(function() {{
