@@ -19,7 +19,7 @@ def parse_khqr_merchant_name(khqr_str: str) -> str:
         pass
     return "KHQR MERCHANT"
 
-def generate_qr_base64(text: str) -> str:
+def generate_qr_image(text: str) -> Image.Image:
     """Generates an EMVCo QR code and stitches 'khqr_icon.png' into the center."""
     ICON_FILENAME = "khqr_icon.png"
 
@@ -69,7 +69,18 @@ def generate_qr_base64(text: str) -> str:
     else:
         print(f"WARN: '{ICON_FILENAME}' missing. Generating standard canvas model.")
 
+    return img_qr
+
+def generate_qr_bytes(text: str) -> bytes:
+    """Returns raw binary PNG bytes for direct download/attachment."""
+    img_qr = generate_qr_image(text)
     buffered = io.BytesIO()
     img_qr.save(buffered, format="PNG")
-    qr_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
+    return buffered.getvalue()
+
+def generate_qr_base64(text: str) -> str:
+    """Returns data:image/png;base64 string for inline HTML <img> display."""
+    qr_bytes = generate_qr_bytes(text)
+    qr_base64 = base64.b64encode(qr_bytes).decode("utf-8")
     return f"data:image/png;base64,{qr_base64}"
+

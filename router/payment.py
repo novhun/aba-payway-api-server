@@ -1,6 +1,6 @@
 from typing import Optional
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Request, Depends
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from sqlalchemy import select
 
 from schema.payment import CheckoutRequest
@@ -8,7 +8,7 @@ from model.database import async_session
 from model.order import OrderTracking
 from model.merchant import Merchant
 import urllib.parse
-from service.qr_generator import generate_qr_base64
+from service.qr_generator import generate_qr_base64, generate_qr_bytes
 from service.playwright_worker import run_payment_worker
 from router.security import verify_api_key
 from fastapi import Depends
@@ -79,6 +79,29 @@ async def fetch_invoice_status_api(invoice_id: int):
                 "receipt": order.receipt_link
             }
     raise HTTPException(status_code=404, detail="Order reference identifier not located.")
+
+@router.get("/qr-code/download/{invoice_id}")
+async def download_khqr_image(invoice_id: int):
+    """Returns the pure binary PNG of the KHQR code as an attachment for reliable saving on mobile and desktop."""
+    async with async_session() as db:
+        result = await db.execute(select(OrderTracking).where(OrderTracking.id == invoice_id))
+        order = result.scalar_one_or_none()
+            
+    if not order or not order.khqr_data:
+        raise HTTPException(status_code=404, detail="Order reference not located or QR code not yet generated.")
+        
+    img_bytes = generate_qr_bytes(order.khqr_data)
+    return Response(
+        content=img_bytes,
+        media_type="image/png",
+        headers={
+            "Content-Disposition": f'attachment; filename="khqr_{invoice_id}.png"',
+            "Content-Type": "image/png",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
 
 @router.get("/qr-code/verify/{invoice_id}", response_class=HTMLResponse)
 async def fetch_invoice_status_qr(invoice_id: int, request: Request, format: Optional[str] = None):
@@ -394,7 +417,7 @@ async def fetch_invoice_status_qr(invoice_id: int, request: Request, format: Opt
                 <a class="btn-primary" id="abaBtn" href="{aba_deeplink}" target="_top" onclick="handleAbaClick(event)">
                     Open ABA Mobile
                 </a>
-                <a class="btn-secondary" href="{qr_base64}" download="khqr_{invoice_id}.png" target="_blank">
+                <a class="btn-secondary" id="saveQrBtn" href="/api/v1/payment/qr-code/download/{invoice_id}" download="khqr_{invoice_id}.png" target="_blank" onclick="handleSaveQr(event)">
                     Save QR
                 </a>
             </div>
@@ -406,6 +429,8 @@ async def fetch_invoice_status_qr(invoice_id: int, request: Request, format: Opt
     </div>
 
     <script>
+        var invoiceId = "{invoice_id}";
+        var downloadUrl = window.location.origin + "/api/v1/payment/qr-code/download/" + invoiceId;
         var encodedKhqr = "{encoded_khqr}";
         var rawKhqr = "{khqr_data}";
         var isAndroid = /android/i.test(navigator.userAgent);
@@ -435,6 +460,20 @@ async def fetch_invoice_status_qr(invoice_id: int, request: Request, format: Opt
             try {{
                 if (window.top && window.top !== window) {{
                     window.top.location.href = abaDeeplink;
+                }}
+            }} catch (err) {{}}
+        }}
+
+        function handleSaveQr(e) {{
+            // 1. Post message to parent window (PHP iframe parent / Flutter Web)
+            try {{
+                if (window.parent && window.parent !== window) {{
+                    window.parent.postMessage({{
+                        type: 'ABA_PAYWAY_SAVE_QR',
+                        action: 'save_qr',
+                        download_url: downloadUrl,
+                        invoice_id: invoiceId
+                    }}, '*');
                 }}
             }} catch (err) {{}}
         }}
