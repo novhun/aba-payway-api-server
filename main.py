@@ -81,6 +81,25 @@ async def lifespan(app: FastAPI):
             await conn.execute(text("ALTER TABLE merchant ADD COLUMN telegram_chat_id VARCHAR DEFAULT ''"))
         except Exception:
             pass
+        # Drop qr_base64 column from order_tracking if exists
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE order_tracking DROP COLUMN IF EXISTS qr_base64"))
+        except Exception:
+            pass
+        # Migrate merchant table to add webhook_url column if not exists
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE merchant ADD COLUMN webhook_url VARCHAR DEFAULT ''"))
+        except Exception:
+            pass
+        # Migrate order_tracking table to add callback_url and webhook_status columns if not exists
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE order_tracking ADD COLUMN callback_url VARCHAR DEFAULT ''"))
+            await conn.execute(text("ALTER TABLE order_tracking ADD COLUMN webhook_status VARCHAR DEFAULT 'PENDING'"))
+        except Exception:
+            pass
     print("LOG: [Database] Storage tables verified clean.")
     await init_browser()
     from service.telegram_service import start_telegram_poller

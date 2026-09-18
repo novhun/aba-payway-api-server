@@ -82,6 +82,7 @@ class MerchantCreateRequest(BaseModel):
     payment_link_khr: str
     payment_link_usd: str
     telegram_chat_id: Optional[str] = ""
+    webhook_url: Optional[str] = ""
     status: str = "ACTIVE"
 
 class MerchantUpdateRequest(BaseModel):
@@ -91,6 +92,7 @@ class MerchantUpdateRequest(BaseModel):
     payment_link_khr: str
     payment_link_usd: str
     telegram_chat_id: Optional[str] = ""
+    webhook_url: Optional[str] = ""
     status: str
 
 class BanIpRequest(BaseModel):
@@ -197,6 +199,7 @@ async def get_admin_data(admin: str = Depends(get_current_admin)):
             "payment_link_khr": m.payment_link_khr,
             "payment_link_usd": m.payment_link_usd,
             "telegram_chat_id": m.telegram_chat_id or "",
+            "webhook_url": getattr(m, "webhook_url", "") or "",
             "status": m.status,
             "created_at": m.created_at.isoformat() if m.created_at else None
         })
@@ -598,6 +601,7 @@ async def create_merchant(payload: MerchantCreateRequest, admin: str = Depends(g
             payment_link_khr=payload.payment_link_khr,
             payment_link_usd=payload.payment_link_usd,
             telegram_chat_id=payload.telegram_chat_id or "",
+            webhook_url=payload.webhook_url or "",
             status=payload.status
         )
         db.add(new_merchant)
@@ -618,9 +622,50 @@ async def update_merchant(code_merchant: str, payload: MerchantUpdateRequest, ad
         merchant.payment_link_khr = payload.payment_link_khr
         merchant.payment_link_usd = payload.payment_link_usd
         merchant.telegram_chat_id = payload.telegram_chat_id or ""
+        merchant.webhook_url = payload.webhook_url or ""
         merchant.status = payload.status
         await db.commit()
     return {"message": "Merchant updated successfully"}
+
+class WebhookTestRequest(BaseModel):
+    webhook_url: str
+
+@router.post("/api/v1/admin/webhook/test")
+async def test_webhook_endpoint(payload: WebhookTestRequest, admin: str = Depends(get_current_admin)):
+    import httpx
+    from datetime import datetime
+    test_data = {
+        "event": "webhook.test_ping",
+        "invoice_id": 999999,
+        "tran_id": "TEST_TRAN_999",
+        "amount": "1.00",
+        "currency": "USD",
+        "status": "SUCCESS",
+        "merchant_name": "TEST STORE",
+        "code_merchant": "test_merchant",
+        "receipt_link": "https://link.payway.com.kh/receipt-sample",
+        "timestamp": datetime.utcnow().isoformat() + "Z"
+    }
+    headers = {
+        "Content-Type": "application/json",
+        "User-Agent": "DigitalKH-PayWay-Webhook/1.0",
+        "X-PayWay-Event": "webhook.test_ping",
+        "X-PayWay-Invoice-Id": "999999"
+    }
+    try:
+        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+            res = await client.post(payload.webhook_url.strip(), json=test_data, headers=headers)
+            return {
+                "success": 200 <= res.status_code < 300,
+                "status_code": res.status_code,
+                "response_text": res.text[:500]
+            }
+    except Exception as e:
+        return {
+            "success": False,
+            "status_code": 0,
+            "error": str(e)
+        }
 
 @router.post("/api/v1/admin/apikeys")
 async def create_api_key(payload: ApiKeyCreateRequest, admin: str = Depends(get_current_admin)):

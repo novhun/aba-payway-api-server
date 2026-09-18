@@ -8,7 +8,7 @@ from sqlalchemy import update
 
 from model.database import async_session
 from model.order import OrderTracking
-from service.qr_generator import generate_qr_base64, parse_khqr_merchant_name
+from service.qr_generator import parse_khqr_merchant_name
 
 playwright_instance: Optional[Playwright] = None
 browser_instance: Optional[Browser] = None
@@ -40,6 +40,9 @@ async def init_browser():
             shutil.which("google-chrome"),
             shutil.which("chromium"),
             shutil.which("chromium-browser"),
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "/Applications/Chromium.app/Contents/MacOS/Chromium",
             "/usr/bin/google-chrome-stable",
             "/usr/bin/google-chrome",
             "/usr/bin/chromium",
@@ -107,7 +110,7 @@ async def close_browser():
         playwright_instance = None
     print("LOG: [Playwright] Global Chromium browser instance closed.")
 
-async def run_payment_worker(db_row_id: int, amount: str, currency: str, target_link: str, code_merchant: str = None):
+async def run_payment_worker(db_row_id: int, amount: str, currency: str, target_link: str, code_merchant: str = None, callback_url: str = None):
     global browser_instance, active_tasks_count
     if browser_instance is None:
         await init_browser()
@@ -190,6 +193,24 @@ async def run_payment_worker(db_row_id: int, amount: str, currency: str, target_
                         "merchant_name": state.get("merchant_name", ""),
                         "code_merchant": code_merchant
                     }))
+
+                    # Trigger instant Webhook notification if callback_url configured
+                    if callback_url:
+                        from service.webhook_service import send_payment_webhook
+                        asyncio.create_task(send_payment_webhook(
+                            order_id=db_row_id,
+                            callback_url=callback_url,
+                            event="payment.success",
+                            payload_data={
+                                "amount": amount,
+                                "currency": currency,
+                                "tran_id": state.get("tran_id") or "N/A",
+                                "receipt_link": receipt_link,
+                                "merchant_name": state.get("merchant_name", ""),
+                                "code_merchant": code_merchant,
+                                "status": "SUCCESS"
+                            }
+                        ))
             except Exception:
                 pass
 
@@ -213,7 +234,6 @@ async def run_payment_worker(db_row_id: int, amount: str, currency: str, target_
         khqr_string = await khqr_element.get_attribute("value")
         
         parsed_merchant_name = parse_khqr_merchant_name(khqr_string)
-        base64_image_data = generate_qr_base64(khqr_string)
 
         async with async_session() as db:
             await db.execute(
@@ -221,7 +241,6 @@ async def run_payment_worker(db_row_id: int, amount: str, currency: str, target_
                 .where(OrderTracking.id == db_row_id)
                 .values(
                     khqr_data=khqr_string,
-                    qr_base64=base64_image_data,
                     merchant_name=parsed_merchant_name
                 )
             )
@@ -247,6 +266,23 @@ async def run_payment_worker(db_row_id: int, amount: str, currency: str, target_
                 )
                 await db.commit()
 
+            if callback_url:
+                from service.webhook_service import send_payment_webhook
+                asyncio.create_task(send_payment_webhook(
+                    order_id=db_row_id,
+                    callback_url=callback_url,
+                    event="payment.expired",
+                    payload_data={
+                        "amount": amount,
+                        "currency": currency,
+                        "tran_id": "",
+                        "receipt_link": "",
+                        "merchant_name": "",
+                        "code_merchant": code_merchant,
+                        "status": "EXPIRED"
+                    }
+                ))
+
     except Exception as e:
         print(f"CRITICAL ERROR: [Task-{db_row_id}] Core automation run failure: {str(e)}")
         try:
@@ -259,6 +295,26 @@ async def run_payment_worker(db_row_id: int, amount: str, currency: str, target_
                 await db.commit()
         except Exception:
             pass
+
+        if callback_url:
+            try:
+                from service.webhook_service import send_payment_webhook
+                asyncio.create_task(send_payment_webhook(
+                    order_id=db_row_id,
+                    callback_url=callback_url,
+                    event="payment.failed",
+                    payload_data={
+                        "amount": amount,
+                        "currency": currency,
+                        "tran_id": "",
+                        "receipt_link": "",
+                        "merchant_name": "",
+                        "code_merchant": code_merchant,
+                        "status": "FAILED"
+                    }
+                ))
+            except Exception:
+                pass
     finally:
         active_tasks_count = max(0, active_tasks_count - 1)
         print(f"LOG: [Task-{db_row_id}] Closing isolated context and cleaning RAM. (Remaining Active Tasks: {active_tasks_count})")

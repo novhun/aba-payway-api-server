@@ -1452,6 +1452,12 @@
                     }
                 },
                 {
+                    title: <span>🔔 Webhook URL</span>,
+                    dataIndex: 'webhook_url',
+                    key: 'webhook_url',
+                    render: (text) => text ? <Tag color="blue" style={{ fontFamily: 'monospace' }}>{text}</Tag> : <Text type="secondary">—</Text>
+                },
+                {
                     title: t.actions || 'Actions', key: 'actions', render: (_, record) => (
                         <Space>
                             <Button type="link" onClick={() => openMerchantModal(record)}>{t.edit || 'Edit'}</Button>
@@ -3035,6 +3041,9 @@ echo $result;
                             </Form.Item>
                             <Form.Item label={t.usd_link || "USD Link"} name="payment_link_usd" rules={[{ required: true }]}>
                                 <Input placeholder="https://link.payway.com.kh/..." />
+                            </Form.Item>
+                            <Form.Item label="🔔 Webhook URL (Optional)" name="webhook_url">
+                                <Input placeholder="https://your-domain.com/api/payment-webhook" />
                             </Form.Item>
                             <Form.Item
                                 label={

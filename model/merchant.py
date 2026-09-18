@@ -12,6 +12,7 @@ class Merchant(Base):
     payment_link_khr: Mapped[str] = mapped_column(String, nullable=False)
     payment_link_usd: Mapped[str] = mapped_column(String, nullable=False)
     telegram_chat_id: Mapped[str] = mapped_column(String, nullable=True, default="")
+    webhook_url: Mapped[str] = mapped_column(String, nullable=True, default="")
     status: Mapped[str] = mapped_column(String, default="ACTIVE")
     
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())

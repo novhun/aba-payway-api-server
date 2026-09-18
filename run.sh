@@ -16,9 +16,22 @@ activate_venv() {
 
 # Helper function to install requirements
 install_reqs() {
+    if [ -d "$VENV_DIR" ]; then
+        source "$VENV_DIR/bin/activate"
+    fi
     if [ -f "$REQ_FILE" ]; then
         echo "📦 Installing dependencies from $REQ_FILE..."
-        pip install -r "$REQ_FILE"
+        if command -v pip &>/dev/null; then
+            pip install -r "$REQ_FILE"
+        else
+            python3 -m pip install -r "$REQ_FILE"
+        fi
+        echo "🌐 Ensuring Playwright Chromium is installed..."
+        if command -v playwright &>/dev/null; then
+            playwright install chromium
+        elif [ -f "$VENV_DIR/bin/playwright" ]; then
+            "$VENV_DIR/bin/playwright" install chromium
+        fi
     else
         echo "⚠️ Warning: $REQ_FILE not found!"
     fi
@@ -60,13 +73,27 @@ while true; do
                 source "$VENV_DIR/bin/activate"
             fi
             echo "🚀 Starting server..."
-            $RUN_CMD
+            if command -v uvicorn &>/dev/null; then
+                $RUN_CMD
+            elif [ -f "$VENV_DIR/bin/uvicorn" ]; then
+                "$VENV_DIR/bin/uvicorn" main:app --host 0.0.0.0 --port 8001 --reload
+            else
+                echo "❌ Uvicorn not found. Please run option 2 or 3 first."
+            fi
             ;;
         5)
-            # Runs directly in current environment (as requested, without explicit "Use venv")
+            if [ -d "$VENV_DIR" ]; then
+                source "$VENV_DIR/bin/activate"
+            fi
             install_reqs
             echo "🚀 Starting server..."
-            $RUN_CMD
+            if command -v uvicorn &>/dev/null; then
+                $RUN_CMD
+            elif [ -f "$VENV_DIR/bin/uvicorn" ]; then
+                "$VENV_DIR/bin/uvicorn" main:app --host 0.0.0.0 --port 8001 --reload
+            else
+                echo "❌ Uvicorn not found. Please run option 1 or 2 first."
+            fi
             ;;
         0)
             echo "👋 Exiting..."
