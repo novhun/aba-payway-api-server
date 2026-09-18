@@ -80,7 +80,7 @@ async def fetch_invoice_status_api(invoice_id: int):
             }
     raise HTTPException(status_code=404, detail="Order reference identifier not located.")
 
-@router.get("/qr-code/verify/{invoice_id}")
+@router.get("/qr-code/verify/{invoice_id}", response_class=HTMLResponse)
 async def fetch_invoice_status_qr(invoice_id: int, request: Request, format: Optional[str] = None):
     async with async_session() as db:
         result = await db.execute(select(OrderTracking).where(OrderTracking.id == invoice_id))
@@ -100,7 +100,7 @@ async def fetch_invoice_status_qr(invoice_id: int, request: Request, format: Opt
     bakong_deeplink = f"bakong://qr?data={encoded_khqr}" if khqr_data else None
 
     # Support direct JSON for native Flutter apps, PHP cURL, or API integrations
-    if format == "json" or "application/json" in request.headers.get("accept", ""):
+    if format == "json" or request.headers.get("accept") == "application/json":
         return JSONResponse({
             "invoice_id": order.id,
             "amount": amount,
@@ -134,7 +134,7 @@ async def fetch_invoice_status_qr(invoice_id: int, request: Request, format: Opt
         """)
 
     if status == "SUCCESS":
-        return f"""<!DOCTYPE html>
+        return HTMLResponse(f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -181,11 +181,11 @@ async def fetch_invoice_status_qr(invoice_id: int, request: Request, format: Opt
         </p>
     </div>
 </body>
-</html>"""
+</html>""")
 
     if status == "EXPIRED" or status == "FAILED":
         khmer_status = "ផុតកំណត់" if status == "EXPIRED" else "បរាជ័យ"
-        return f"""<!DOCTYPE html>
+        return HTMLResponse(f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -233,12 +233,12 @@ async def fetch_invoice_status_qr(invoice_id: int, request: Request, format: Opt
         </p>
     </div>
 </body>
-</html>"""
+</html>""")
 
     qr_base64 = generate_qr_base64(khqr_data)
     encoded_khqr = urllib.parse.quote(khqr_data)
 
-    return f"""<!DOCTYPE html>
+    return HTMLResponse(f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -452,4 +452,4 @@ async def fetch_invoice_status_qr(invoice_id: int, request: Request, format: Opt
     </script>
 </body>
 </html>
-    """
+    """)
